@@ -1,0 +1,76 @@
+use anchor_lang::prelude::*;
+
+pub const MAX_JURORS: usize = 9;
+pub const CONFIG_SEED: &[u8] = b"config";
+pub const TENANCY_SEED: &[u8] = b"tenancy";
+
+/// Global protocol settings (one per deployment).
+#[account]
+#[derive(InitSpace)]
+pub struct Config {
+    /// Can change economic parameters.
+    pub admin: Pubkey,
+    /// Controls the juror set. Start as Ben's wallet; move to a Squads multisig / Realms DAO in the sprint.
+    pub dao_authority: Pubkey,
+    /// Deposit currency (USDC on mainnet, a test mint on devnet).
+    pub mint: Pubkey,
+    /// Token account that receives the protocol's cut of yield.
+    pub treasury: Pubkey,
+    /// Protocol fee on yield only, in basis points.
+    pub protocol_fee_bps: u16,
+    /// After tenancy end, how long the landlord has to raise a claim before auto-release.
+    pub claim_window_secs: i64,
+    /// How long jurors have to vote once a claim is raised.
+    pub voting_period_secs: i64,
+    /// Minimum votes for a DAO decision. Below quorum the tenant gets the full deposit.
+    pub quorum: u8,
+    pub juror_count: u8,
+    pub jurors: [Pubkey; MAX_JURORS],
+    pub bump: u8,
+}
+
+impl Config {
+    pub fn is_juror(&self, key: &Pubkey) -> bool {
+        self.jurors[..self.juror_count as usize].contains(key)
+    }
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace, Debug)]
+pub enum TenancyStatus {
+    /// Deposit locked and earning.
+    Active,
+    /// Landlord raised a deduction claim; DAO jurors can vote.
+    Claimed,
+    /// Outcome fixed (landlord approved release or tenant accepted claim); waiting for `settle`.
+    Resolved,
+}
+
+/// One deposit for one tenancy. PDA: ["tenancy", tenant, landlord, tenancy_id].
+#[account]
+#[derive(InitSpace)]
+pub struct Tenancy {
+    pub tenant: Pubkey,
+    pub landlord: Pubkey,
+    pub mint: Pubkey,
+    pub tenancy_id: u64,
+    pub principal: u64,
+    pub start_ts: i64,
+    /// 0 = periodic / rolling tenancy with no end date yet (set later via `serve_notice`).
+    pub end_ts: i64,
+    pub status: TenancyStatus,
+
+    // ---- dispute ----
+    pub claim_amount: u64,
+    /// Hash of the landlord's evidence bundle (photos, inventory, invoices) stored off-chain.
+    pub landlord_evidence: [u8; 32],
+    /// Hash of the tenant's counter-evidence. Optional: an absent tenant is NOT penalised.
+    pub tenant_evidence: [u8; 32],
+    pub voting_ends_ts: i64,
+    pub vote_count: u8,
+    pub voters: [Pubkey; MAX_JURORS],
+    pub votes: [u64; MAX_JURORS],
+
+    /// Final amount going to the landlord once Resolved.
+    pub landlord_award: u64,
+    pub bump: u8,
+}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UltraRentz — Eternal Week 1</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #0b0f1a; color: #f4f6fb; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+  .slide { position: absolute; inset: 0; display: none; flex-direction: column; justify-content: center; padding: 8vw 7vw; }
+  .slide.on { display: flex; }
+  .tag { font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: #14f195; margin-bottom: 18px; font-weight: 700; }
+  h1 { font-size: clamp(34px, 9vw, 72px); line-height: 1.05; font-weight: 800; }
+  h2 { font-size: clamp(28px, 7vw, 54px); line-height: 1.1; font-weight: 800; margin-bottom: 26px; }
+  p.lead { font-size: clamp(18px, 4.6vw, 28px); color: #c3c9d9; margin-top: 22px; line-height: 1.35; }
+  ul { list-style: none; }
+  li { font-size: clamp(18px, 4.6vw, 28px); line-height: 1.35; padding: 12px 0 12px 30px; position: relative; color: #e3e7f1; border-bottom: 1px solid #1d2436; }
+  li:last-child { border-bottom: none; }
+  li::before { content: ""; position: absolute; left: 0; top: 24px; width: 12px; height: 12px; border-radius: 3px; background: linear-gradient(135deg,#9945ff,#14f195); }
+  .grad { background: linear-gradient(90deg,#9945ff,#14f195); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .flow span { background: #161d2e; border: 1px solid #2a3350; border-radius: 999px; padding: 8px 14px; font-size: clamp(14px, 3.6vw, 20px); }
+  .nav { position: fixed; bottom: 18px; left: 0; right: 0; text-align: center; font-size: 13px; color: #5e6782; }
+  .tapzone { position: fixed; inset: 0; display: flex; }
+  .tapzone div { flex: 1; }
+</style>
+</head>
+<body>
+
+<section class="slide on">
+  <div class="tag">Colosseum Eternal · Week 1</div>
+  <h1><span class="grad">UltraRentz</span></h1>
+  <p class="lead">Rent deposits that earn yield and come back automatically — held on Solana, not by the landlord.</p>
+  <p class="lead" style="font-size:18px;margin-top:40px;color:#7d87a3">Ben Ogungbeje · Founder</p>
+</section>
+
+<section class="slide">
+  <div class="tag">Progress</div>
+  <h2>Rebuilt natively in Rust + Anchor</h2>
+  <div class="flow">
+    <span>1 · Tenant locks deposit</span><span>2 · Earns yield</span><span>3 · Landlord claims + evidence</span><span>4 · 3 DAO jurors vote</span><span>5 · Anyone settles</span>
+  </div>
+  <p class="lead">Full lifecycle runs on a local Solana validator. Test run: landlord 200 · tenant 1,032.40 · fee 3.60 — every token accounted for.</p>
+</section>
+
+<section class="slide">
+  <div class="tag">What we prioritised</div>
+  <h2>Money flow first. Fairness built in.</h2>
+  <ul>
+    <li>Core flow before frontend: lock → release / dispute → settle</li>
+    <li>Burden of proof on the landlord</li>
+    <li>No quorum = tenant gets everything</li>
+    <li>Absent tenant (e.g. left the country) never defaulted against</li>
+    <li>Protocol fee from yield only — never the deposit</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="tag">Challenges</div>
+  <h2>What broke — and the fix</h2>
+  <ul>
+    <li><b>Settle exceeded Solana's 4 KB stack limit</b><br>→ moved large accounts to the heap (Box)</li>
+    <li><b>New Rust crates broke the default Solana toolchain</b><br>→ pinned platform-tools v1.52</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="tag">Next week</div>
+  <h2>From working to real</h2>
+  <ul>
+    <li>Deploy to Solana devnet</li>
+    <li>Real yield via a Solana lending market</li>
+    <li>Keeper bot for automatic release</li>
+    <li>First real market: <b>Ireland</b> — no deposit protection scheme in operation</li>
+  </ul>
+  <p class="lead" style="margin-top:30px">Thank you 🙏</p>
+</section>
+
+<div class="tapzone"><div id="prev"></div><div id="next"></div></div>
+<div class="nav" id="nav"></div>
+
+<script>
+  const s = [...document.querySelectorAll('.slide')];
+  let i = 0;
+  const show = n => { i = Math.max(0, Math.min(s.length - 1, n)); s.forEach((el, k) => el.classList.toggle('on', k === i)); document.getElementById('nav').textContent = `${i + 1} / ${s.length} · tap right → / left ←`; };
+  document.getElementById('next').onclick = () => show(i + 1);
+  document.getElementById('prev').onclick = () => show(i - 1);
+  document.addEventListener('keydown', e => { if (['ArrowRight',' ','PageDown'].includes(e.key)) show(i + 1); if (['ArrowLeft','PageUp'].includes(e.key)) show(i - 1); });
+  show(0);
+</script>
+</body>
+</html>

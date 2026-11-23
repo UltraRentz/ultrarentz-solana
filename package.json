@@ -2,7 +2,8 @@
   "name": "ultrarentz-solana",
   "private": true,
   "scripts": {
-    "demo": "ts-node scripts/demo-devnet.ts",
+    "demo": "ts-node scripts/demo.ts",
+    "keeper": "ts-node scripts/keeper.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

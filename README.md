@@ -51,10 +51,23 @@ solana program deploy target/deploy/ultrarentz.so \
   --program-id target/deploy/ultrarentz-keypair.json
 
 npm install
-ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \
-ANCHOR_WALLET=~/.config/solana/id.json \
-npm run demo                        # full lifecycle with Explorer links
+export ANCHOR_PROVIDER_URL=https://api.devnet.solana.com
+export ANCHOR_WALLET=~/.config/solana/id.json
+
+npm run demo -- all        # 3 scenarios: dispute, landlord silent (auto-refund), one-click release
+npm run keeper             # keeper bot: settles every due tenancy automatically (loops every 15s)
+npm run keeper -- --once   # single pass, e.g. from cron
 ```
+
+## Keeper bot
+
+`scripts/keeper.ts` scans all tenancies and calls the permissionless `settle` instruction as soon as one is due:
+
+| Status | Due when | Outcome |
+|---|---|---|
+| Active | claim window closed, no claim | full refund + yield to tenant |
+| Resolved | landlord approved / tenant accepted | pay out immediately |
+| Claimed | DAO voting closed | lower-median award, or the tenant wins if there's no quorum |
 
 ## Build from source
 
@@ -70,6 +83,7 @@ cargo test -p ultrarentz            # unit tests (settlement maths)
 
 * ✅ SBF build: no stack warnings (large accounts are boxed)
 * ✅ 7 unit tests pass for payout split and median voting
-* ✅ Full lifecycle demo (`scripts/demo-devnet.ts`) passes on a local validator: lock → yield → claim → 3 votes → settle. Landlord 200, tenant 1,032.40, protocol fee 3.60, total 1,236.00
+* ✅ Full lifecycle demo (`scripts/demo.ts`) passes on a local validator: lock → yield → claim → 3 votes → settle. Landlord 200, tenant 1,032.40, protocol fee 3.60, total 1,236.00
+* ✅ Keeper bot + 3 demo scenarios pass on a local validator (dispute: landlord 200 / tenant 1,032.40 · silent landlord: tenant 1,232.40 · one-click release: tenant 1,200)
 * ⏳ Devnet deploy, frontend wiring
 * ⏳ Real yield adapter, keeper bot, DAO hardening (Eternal sprint)

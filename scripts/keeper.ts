@@ -54,6 +54,10 @@ export async function runOnce(ctx: Ctx): Promise<number> {
       // Keeper pays to create any missing token accounts so a payout never gets stuck.
       const tenantAta = await getOrCreateAssociatedTokenAccount(conn, admin, t.mint, t.tenant);
       const landlordAta = await getOrCreateAssociatedTokenAccount(conn, admin, t.mint, t.landlord);
+      const hasAgent = !t.agent.equals(PublicKey.default);
+      const agentAta = hasAgent
+        ? (await getOrCreateAssociatedTokenAccount(conn, admin, t.mint, t.agent)).address
+        : null;
       const sig = await program.methods
         .settle()
         .accountsPartial({
@@ -66,6 +70,7 @@ export async function runOnce(ctx: Ctx): Promise<number> {
           landlord: t.landlord,
           tenantToken: tenantAta.address,
           landlordToken: landlordAta.address,
+          agentToken: agentAta,
           treasury: cfg.treasury,
           tokenProgram: TOKEN_PROGRAM_ID,
         })

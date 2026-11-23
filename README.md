@@ -84,6 +84,7 @@ cargo test -p ultrarentz            # unit tests (settlement maths)
 * ✅ SBF build: no stack warnings (large accounts are boxed)
 * ✅ 7 unit tests pass for payout split and median voting
 * ✅ Full lifecycle demo (`scripts/demo.ts`) passes on a local validator: lock → yield → claim → 3 votes → settle. Landlord 200, tenant 1,032.40, protocol fee 3.60, total 1,236.00
+* ✅ Yield split 70/20/5/5 (tenant / landlord / agent / UltraRentz), configurable on-chain; optional letting agent per tenancy (no agent → agent's 5% goes to tenant). Principal is never split.
 * ✅ Keeper bot + 3 demo scenarios pass on a local validator (dispute: landlord 200 / tenant 1,032.40 · silent landlord: tenant 1,232.40 · one-click release: tenant 1,200)
 * ⏳ Devnet deploy, frontend wiring
 * ⏳ Real yield adapter, DAO hardening (Eternal sprint)

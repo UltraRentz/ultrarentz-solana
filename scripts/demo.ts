@@ -72,16 +72,20 @@ async function scenarioDispute(ctx: Ctx, mint: any, jurors: Keypair[]) {
 }
 
 async function scenarioAuto(ctx: Ctx, mint: any) {
-  console.log("\n━━━━━━━━ Scenario 2: Landlord silent → automatic refund ━━━━━━━━");
-  const tenant = Keypair.generate(), landlord = Keypair.generate();
+  console.log("\n━━━━━━━━ Scenario 2: Agent-onboarded deposit, landlord silent → automatic refund ━━━━━━━━");
+  const tenant = Keypair.generate(), landlord = Keypair.generate(), agent = Keypair.generate();
   await fund(ctx, [tenant]);
-  const t = await createTenancy(ctx, mint, tenant, landlord.publicKey, DEPOSIT, 15);
-  log(ctx, `Tenant locked ${fmt(DEPOSIT)} tUSDC in escrow`, t.sig);
+  const t = await createTenancy(ctx, mint, tenant, landlord.publicKey, DEPOSIT, 15, agent.publicKey);
+  log(ctx, `Letting agent onboarded deposit; tenant locked ${fmt(DEPOSIT)} tUSDC in escrow`, t.sig);
   log(ctx, `Vault earned ${fmt(YIELD)} tUSDC yield (simulated)`, await addYield(ctx, mint, t.vault));
   console.log(`\n⏳ Tenancy ends, then the ${DEMO_WINDOW_SECS}s claim window runs out with no claim…`);
   await waitForChainTime(ctx, t.endTs + DEMO_WINDOW_SECS + 1);
   await keeperUntilSettled(ctx);
-  console.log(`📊 Tenant ${fmt(await balance(ctx, mint, tenant.publicKey))} (full deposit + yield − 10% fee on yield) · Landlord ${fmt(await balance(ctx, mint, landlord.publicKey))}`);
+  console.log(`📊 Yield ${fmt(YIELD)} split 70/20/5/5:`);
+  console.log(`   Tenant   ${fmt(await balance(ctx, mint, tenant.publicKey))}  (full deposit + 70% of yield)`);
+  console.log(`   Landlord ${fmt(await balance(ctx, mint, landlord.publicKey))}  (20% of yield)`);
+  console.log(`   Agent    ${fmt(await balance(ctx, mint, agent.publicKey))}  (5% of yield)`);
+  console.log(`   UltraRentz 5% of yield → treasury`);
 }
 
 async function scenarioRelease(ctx: Ctx, mint: any) {

@@ -38,4 +38,8 @@ pub enum UrError {
     TooManyJurors,
     #[msg("Invalid parameter")]
     InvalidParam,
+    #[msg("Yield split must add up to 100%")]
+    InvalidSplit,
+    #[msg("Agent token account missing or wrong")]
+    AgentAccountMissing,
 }

@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::math::YieldSplit;
+
 pub const MAX_JURORS: usize = 9;
 pub const CONFIG_SEED: &[u8] = b"config";
 pub const TENANCY_SEED: &[u8] = b"tenancy";
@@ -16,8 +18,8 @@ pub struct Config {
     pub mint: Pubkey,
     /// Token account that receives the protocol's cut of yield.
     pub treasury: Pubkey,
-    /// Protocol fee on yield only, in basis points.
-    pub protocol_fee_bps: u16,
+    /// How yield is shared (tenant / landlord / agent / UltraRentz). Principal is never split.
+    pub yield_split: YieldSplit,
     /// After tenancy end, how long the landlord has to raise a claim before auto-release.
     pub claim_window_secs: i64,
     /// How long jurors have to vote once a claim is raised.
@@ -51,6 +53,8 @@ pub enum TenancyStatus {
 pub struct Tenancy {
     pub tenant: Pubkey,
     pub landlord: Pubkey,
+    /// Letting agent that onboarded this deposit; `Pubkey::default()` = no agent.
+    pub agent: Pubkey,
     pub mint: Pubkey,
     pub tenancy_id: u64,
     pub principal: u64,

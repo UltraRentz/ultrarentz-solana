@@ -23,6 +23,7 @@ pub mod math;
 pub mod state;
 
 use errors::UrError;
+use math::YieldSplit;
 use state::*;
 
 declare_id!("13BK4Z9HZ2GWGzqHjPTDGW4Ayh9jN6iqPCkekCpfATzX");
@@ -34,18 +35,18 @@ pub mod ultrarentz {
     pub fn initialize_config(
         ctx: Context<InitializeConfig>,
         dao_authority: Pubkey,
-        protocol_fee_bps: u16,
+        yield_split: YieldSplit,
         claim_window_secs: i64,
         voting_period_secs: i64,
     ) -> Result<()> {
-        require!(protocol_fee_bps <= 5_000, UrError::InvalidParam);
+        require!(yield_split.is_valid(), UrError::InvalidSplit);
         require!(claim_window_secs > 0 && voting_period_secs > 0, UrError::InvalidParam);
         let c = &mut ctx.accounts.config;
         c.admin = ctx.accounts.admin.key();
         c.dao_authority = dao_authority;
         c.mint = ctx.accounts.mint.key();
         c.treasury = ctx.accounts.treasury.key();
-        c.protocol_fee_bps = protocol_fee_bps;
+        c.yield_split = yield_split;
         c.claim_window_secs = claim_window_secs;
         c.voting_period_secs = voting_period_secs;
         c.quorum = 1;
@@ -57,14 +58,14 @@ pub mod ultrarentz {
 
     pub fn update_params(
         ctx: Context<AdminOnly>,
-        protocol_fee_bps: u16,
+        yield_split: YieldSplit,
         claim_window_secs: i64,
         voting_period_secs: i64,
     ) -> Result<()> {
-        require!(protocol_fee_bps <= 5_000, UrError::InvalidParam);
+        require!(yield_split.is_valid(), UrError::InvalidSplit);
         require!(claim_window_secs > 0 && voting_period_secs > 0, UrError::InvalidParam);
         let c = &mut ctx.accounts.config;
-        c.protocol_fee_bps = protocol_fee_bps;
+        c.yield_split = yield_split;
         c.claim_window_secs = claim_window_secs;
         c.voting_period_secs = voting_period_secs;
         Ok(())
@@ -90,6 +91,7 @@ pub mod ultrarentz {
         tenancy_id: u64,
         principal: u64,
         end_ts: i64,
+        agent: Option<Pubkey>,
     ) -> Result<()> {
         require!(principal > 0, UrError::ZeroDeposit);
         require_keys_neq!(ctx.accounts.tenant.key(), ctx.accounts.landlord.key(), UrError::SameParty);
@@ -113,6 +115,7 @@ pub mod ultrarentz {
         let t = &mut ctx.accounts.tenancy;
         t.tenant = ctx.accounts.tenant.key();
         t.landlord = ctx.accounts.landlord.key();
+        t.agent = agent.unwrap_or_default();
         t.mint = ctx.accounts.mint.key();
         t.tenancy_id = tenancy_id;
         t.principal = principal;
@@ -133,6 +136,7 @@ pub mod ultrarentz {
             tenancy: t.key(),
             tenant: t.tenant,
             landlord: t.landlord,
+            agent: t.agent,
             principal,
             end_ts,
         });
@@ -266,11 +270,19 @@ pub mod ultrarentz {
             }
         };
 
+        let agent_key = ctx.accounts.tenancy.agent;
+        let has_agent = agent_key != Pubkey::default();
+        if has_agent {
+            let at = ctx.accounts.agent_token.as_ref().ok_or(UrError::AgentAccountMissing)?;
+            require_keys_eq!(at.owner, agent_key, UrError::AgentAccountMissing);
+            require_keys_eq!(at.mint, ctx.accounts.mint.key(), UrError::AgentAccountMissing);
+        }
         let p = math::compute_payout(
             ctx.accounts.vault.amount,
             ctx.accounts.tenancy.principal,
             award,
-            cfg.protocol_fee_bps,
+            &cfg.yield_split,
+            has_agent,
         );
 
         let tenant_key = ctx.accounts.tenancy.tenant;
@@ -288,7 +300,10 @@ pub mod ultrarentz {
 
         let a = &ctx.accounts;
         pay_from_vault(a, a.landlord_token.to_account_info(), p.landlord, signer)?;
-        pay_from_vault(a, a.treasury.to_account_info(), p.protocol_fee, signer)?;
+        if let Some(at) = a.agent_token.as_ref() {
+            pay_from_vault(a, at.to_account_info(), p.agent, signer)?;
+        }
+        pay_from_vault(a, a.treasury.to_account_info(), p.protocol, signer)?;
         pay_from_vault(a, a.tenant_token.to_account_info(), p.tenant, signer)?;
 
         token_interface::close_account(CpiContext::new_with_signer(
@@ -305,7 +320,8 @@ pub mod ultrarentz {
             tenancy: ctx.accounts.tenancy.key(),
             to_tenant: p.tenant,
             to_landlord: p.landlord,
-            protocol_fee: p.protocol_fee,
+            to_agent: p.agent,
+            to_protocol: p.protocol,
         });
         Ok(())
     }
@@ -458,6 +474,9 @@ pub struct Settle<'info> {
     pub tenant_token: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(mut, token::mint = mint, token::authority = landlord, token::token_program = token_program)]
     pub landlord_token: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// Required only when the tenancy has an agent (checked in the handler).
+    #[account(mut)]
+    pub agent_token: Option<Box<InterfaceAccount<'info, TokenAccount>>>,
     #[account(mut, token::mint = mint, token::token_program = token_program)]
     pub treasury: Box<InterfaceAccount<'info, TokenAccount>>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -470,6 +489,7 @@ pub struct DepositLocked {
     pub tenancy: Pubkey,
     pub tenant: Pubkey,
     pub landlord: Pubkey,
+    pub agent: Pubkey,
     pub principal: u64,
     pub end_ts: i64,
 }
@@ -513,5 +533,6 @@ pub struct Settled {
     pub tenancy: Pubkey,
     pub to_tenant: u64,
     pub to_landlord: u64,
-    pub protocol_fee: u64,
+    pub to_agent: u64,
+    pub to_protocol: u64,
 }

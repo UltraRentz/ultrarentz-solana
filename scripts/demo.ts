@@ -81,11 +81,11 @@ async function scenarioAuto(ctx: Ctx, mint: any) {
   console.log(`\n⏳ Tenancy ends, then the ${DEMO_WINDOW_SECS}s claim window runs out with no claim…`);
   await waitForChainTime(ctx, t.endTs + DEMO_WINDOW_SECS + 1);
   await keeperUntilSettled(ctx);
-  console.log(`📊 Yield ${fmt(YIELD)} split 70/20/5/5:`);
-  console.log(`   Tenant   ${fmt(await balance(ctx, mint, tenant.publicKey))}  (full deposit + 70% of yield)`);
+  console.log(`📊 Yield ${fmt(YIELD)} split 60/20/5/15:`);
+  console.log(`   Tenant   ${fmt(await balance(ctx, mint, tenant.publicKey))}  (full deposit + 60% of yield)`);
   console.log(`   Landlord ${fmt(await balance(ctx, mint, landlord.publicKey))}  (20% of yield)`);
   console.log(`   Agent    ${fmt(await balance(ctx, mint, agent.publicKey))}  (5% of yield)`);
-  console.log(`   UltraRentz 5% of yield → treasury`);
+  console.log(`   UltraRentz 15% of yield → treasury`);
 }
 
 async function scenarioRelease(ctx: Ctx, mint: any) {

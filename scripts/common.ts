@@ -23,8 +23,8 @@ import * as path from "path";
 
 export const DECIMALS = 6;
 export const UNIT = 10 ** DECIMALS;
-/** Yield split: 70% tenant / 20% landlord / 5% agent / 5% UltraRentz. Principal is never split. */
-export const YIELD_SPLIT = { tenantBps: 7_000, landlordBps: 2_000, agentBps: 500, protocolBps: 500 };
+/** Yield split: 60% tenant / 20% landlord / 5% agent / 15% UltraRentz. Principal is never split. */
+export const YIELD_SPLIT = { tenantBps: 6_000, landlordBps: 2_000, agentBps: 500, protocolBps: 1_500 };
 export const DEMO_WINDOW_SECS = 45; // production: 14 days claim window, 7 days voting
 
 export const sleep = (s: number) => new Promise((r) => setTimeout(r, s * 1000));
@@ -65,7 +65,7 @@ export async function ensureConfig(ctx: Ctx, jurors: PublicKey[]): Promise<Publi
       .updateParams(YIELD_SPLIT, new BN(DEMO_WINDOW_SECS), new BN(DEMO_WINDOW_SECS))
       .accountsPartial({ admin: admin.publicKey, config: configPda })
       .rpc();
-    log(ctx, `Config ready (demo windows ${DEMO_WINDOW_SECS}s, yield split 70/20/5/5)`, sig);
+    log(ctx, `Config ready (demo windows ${DEMO_WINDOW_SECS}s, yield split 60/20/5/15)`, sig);
   } else {
     mint = await createMint(conn, admin, admin.publicKey, null, DECIMALS);
     const treasury = await getOrCreateAssociatedTokenAccount(conn, admin, mint, admin.publicKey);

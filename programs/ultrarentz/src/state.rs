@@ -24,6 +24,8 @@ pub struct Config {
     pub claim_window_secs: i64,
     /// How long jurors have to vote once a claim is raised.
     pub voting_period_secs: i64,
+    /// Lending program the vault deposits into (Jupiter Lend Earn). `Pubkey::default()` = no external yield.
+    pub yield_program: Pubkey,
     /// Minimum votes for a DAO decision. Below quorum the tenant gets the full deposit.
     pub quorum: u8,
     pub juror_count: u8,
@@ -76,5 +78,9 @@ pub struct Tenancy {
 
     /// Final amount going to the landlord once Resolved.
     pub landlord_award: u64,
+    /// True while the deposit sits in the lending market; must be withdrawn before `settle`.
+    pub yield_active: bool,
+    /// Token account (owned by this tenancy PDA) holding the lending market's share tokens.
+    pub yield_shares_account: Pubkey,
     pub bump: u8,
 }

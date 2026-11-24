@@ -15,8 +15,9 @@ import {
   getOrCreateAssociatedTokenAccount,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction, ComputeBudgetProgram } from "@solana/web3.js";
 import { Ctx, loadProgram, explorer, fmt, sleep } from "./common";
+import { LendingAdapter, loadAdapter, withdrawFromYieldIx } from "./yield";
 
 const INTERVAL_SECS = 15;
 
@@ -46,6 +47,7 @@ export async function runOnce(ctx: Ctx): Promise<number> {
   const all: { publicKey: PublicKey; account: any }[] = await (program.account as any).tenancy.all();
   const now = await chainNow(ctx);
   let settled = 0;
+  let adapter: LendingAdapter | undefined;
 
   for (const { publicKey: tenancy, account: t } of all) {
     const reason = dueReason(t, cfg, now);
@@ -58,7 +60,7 @@ export async function runOnce(ctx: Ctx): Promise<number> {
       const agentAta = hasAgent
         ? (await getOrCreateAssociatedTokenAccount(conn, admin, t.mint, t.agent)).address
         : null;
-      const sig = await program.methods
+      const settleIx = await program.methods
         .settle()
         .accountsPartial({
           cranker: admin.publicKey,
@@ -74,10 +76,18 @@ export async function runOnce(ctx: Ctx): Promise<number> {
           treasury: cfg.treasury,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
-        .rpc();
+        .instruction();
+      // If the deposit is in the lending market, pull principal + interest back first — same transaction.
+      const tx = new Transaction().add(ComputeBudgetProgram.setComputeUnitLimit({ units: 600_000 }));
+      if (t.yieldActive) {
+        adapter = adapter ?? (await loadAdapter(ctx, t.mint));
+        tx.add(await withdrawFromYieldIx(ctx, adapter, tenancy, t.mint));
+      }
+      tx.add(settleIx);
+      const sig = await ctx.provider.sendAndConfirm(tx);
       settled++;
       console.log(
-        `🤖 Keeper settled ${tenancy.toBase58().slice(0, 8)}… (${reason}, deposit ${fmt(t.principal)})\n   ${explorer(sig, conn)}`
+        `🤖 Keeper settled ${tenancy.toBase58().slice(0, 8)}… (${reason}${t.yieldActive ? ", withdrew from lending market" : ""}, deposit ${fmt(t.principal)})\n   ${explorer(sig, conn)}`
       );
     } catch (e: any) {
       console.warn(`⚠️  Could not settle ${tenancy.toBase58().slice(0, 8)}…: ${e.message ?? e}`);

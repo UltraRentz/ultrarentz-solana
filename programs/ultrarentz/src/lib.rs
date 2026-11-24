@@ -21,10 +21,12 @@ use anchor_spl::token_interface::{
 pub mod errors;
 pub mod math;
 pub mod state;
+pub mod yield_adapter;
 
 use errors::UrError;
 use math::YieldSplit;
 use state::*;
+use yield_adapter::*;
 
 declare_id!("13BK4Z9HZ2GWGzqHjPTDGW4Ayh9jN6iqPCkekCpfATzX");
 
@@ -52,6 +54,7 @@ pub mod ultrarentz {
         c.quorum = 1;
         c.juror_count = 0;
         c.jurors = [Pubkey::default(); MAX_JURORS];
+        c.yield_program = Pubkey::default();
         c.bump = ctx.bumps.config;
         Ok(())
     }
@@ -130,6 +133,8 @@ pub mod ultrarentz {
         t.voters = [Pubkey::default(); MAX_JURORS];
         t.votes = [0; MAX_JURORS];
         t.landlord_award = 0;
+        t.yield_active = false;
+        t.yield_shares_account = Pubkey::default();
         t.bump = ctx.bumps.tenancy;
 
         emit!(DepositLocked {
@@ -243,12 +248,35 @@ pub mod ultrarentz {
         Ok(())
     }
 
+    /// Admin points the protocol at a lending program (Jupiter Lend Earn). Default = none.
+    pub fn set_yield_program(ctx: Context<AdminOnly>, yield_program: Pubkey) -> Result<()> {
+        ctx.accounts.config.yield_program = yield_program;
+        Ok(())
+    }
+
+    /// Move the whole vault into the lending market (permissionless: tenant, agent or keeper).
+    /// `remaining_accounts` = the lending program's deposit accounts, in its documented order.
+    pub fn deposit_to_yield<'info>(
+        ctx: Context<'_, '_, 'info, 'info, DepositToYield<'info>>,
+    ) -> Result<()> {
+        yield_adapter::deposit(ctx)
+    }
+
+    /// Pull everything (principal + interest) back from the lending market into the vault.
+    /// Permissionless; the keeper sends this together with `settle`.
+    pub fn withdraw_from_yield<'info>(
+        ctx: Context<'_, '_, 'info, 'info, WithdrawFromYield<'info>>,
+    ) -> Result<()> {
+        yield_adapter::withdraw(ctx)
+    }
+
     /// Permissionless crank: pays everyone out and closes the vault.
     /// Works for: auto-release after the claim window, resolved cases, and finished votes.
     pub fn settle(ctx: Context<Settle>) -> Result<()> {
         let cfg = &ctx.accounts.config;
         let now = Clock::get()?.unix_timestamp;
 
+        require!(!ctx.accounts.tenancy.yield_active, UrError::YieldStillDeployed);
         let award = {
             let t = &ctx.accounts.tenancy;
             match t.status {

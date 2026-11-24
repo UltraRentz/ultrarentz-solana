@@ -54,10 +54,32 @@ npm install
 export ANCHOR_PROVIDER_URL=https://api.devnet.solana.com
 export ANCHOR_WALLET=~/.config/solana/id.json
 
-npm run demo -- all        # 3 scenarios: dispute, landlord silent (auto-refund), one-click release
+npm run demo -- all        # 4 scenarios: dispute, silent landlord + agent, one-click release, lending market
 npm run keeper             # keeper bot: settles every due tenancy automatically (loops every 15s)
 npm run keeper -- --once   # single pass, e.g. from cron
 ```
+
+## Yield: Jupiter Lend Earn adapter
+
+The vault can park the deposit in a Solana lending market while the tenancy runs:
+
+1. Admin sets the approved lending program: `set_yield_program(program_id)`.
+2. `deposit_to_yield` (anyone): vault → lending market. The tenancy PDA holds the share tokens.
+3. At move-out, the keeper sends `withdraw_from_yield` + `settle` in **one transaction**: principal + interest come back, and the 60/20/5/15 split runs.
+
+We call Jupiter with a raw CPI (its documented discriminators + account order), so there's no crate dependency to drift. The client resolves Jupiter's accounts with `@jup-ag/lend` (`scripts/yield.ts`). Our program pins the security-critical accounts (signer = tenancy PDA, money only moves vault ⇄ this tenancy's share account, mints match, program = the approved one).
+
+**Testing.** `programs/mock_lending` is a TEST-ONLY stand-in with Jupiter's exact instruction names and account order, paying 3% on withdraw:
+
+```bash
+solana-test-validator --reset \
+  --bpf-program 13BK4Z9HZ2GWGzqHjPTDGW4Ayh9jN6iqPCkekCpfATzX target/deploy/ultrarentz.so \
+  --bpf-program 73ZmGvzn29yTfZqwebHh8cXrcNS6TFRxXWVu5rKyYpWQ target/deploy/mock_lending.so
+npm run demo -- lending     # deposit → lending market → keeper withdraws + settles
+npm run security            # 5 attack attempts, all must be rejected
+```
+
+Real Jupiter: the `@jup-ag/lend` SDK currently targets **mainnet** markets only, so the next step is testing against a mainnet fork (e.g. Surfpool) with `LENDING=jupiter`.
 
 ## Keeper bot
 
@@ -87,4 +109,5 @@ cargo test -p ultrarentz            # unit tests (settlement maths)
 * ✅ Yield split 60/20/5/15 (tenant / landlord / agent / UltraRentz), configurable on-chain; optional letting agent per tenancy (no agent → agent's 5% goes to tenant). Principal is never split.
 * ✅ Keeper bot + 3 demo scenarios pass on a local validator (dispute: landlord 200 / tenant 1,032.40 · silent landlord: tenant 1,232.40 · one-click release: tenant 1,200)
 * ⏳ Devnet deploy, frontend wiring
-* ⏳ Real yield adapter, DAO hardening (Eternal sprint)
+* ✅ Lending-market yield adapter (Jupiter Lend Earn interface): deposit → earn → keeper withdraws + settles in one tx. Tested end-to-end against a Jupiter-compatible mock (1,200 → 1,236 at 3%: tenant 1,223.40 · landlord 7.20 · UltraRentz 5.40). 5/5 security checks reject attacks.
+* ⏳ Test against real Jupiter on a mainnet fork; DAO hardening

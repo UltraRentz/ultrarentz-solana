@@ -4,10 +4,12 @@
   "scripts": {
     "demo": "ts-node scripts/demo.ts",
     "keeper": "ts-node scripts/keeper.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "security": "ts-node scripts/security-checks.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
+    "@jup-ag/lend": "^0.4.0",
     "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.0"
   },

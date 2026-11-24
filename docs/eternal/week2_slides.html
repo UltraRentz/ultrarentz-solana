@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UltraRentz — Eternal Week 2</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #0b0f1a; color: #f4f6fb; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide { position: absolute; inset: 0; display: none; flex-direction: column; justify-content: center; padding: 6vh 8vw; }
+  .slide.on { display: flex; }
+  .tag { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: #14f195; margin-bottom: 18px; font-weight: 700; }
+  h1 { font-size: clamp(36px, 7vw, 80px); line-height: 1.05; font-weight: 800; }
+  h2 { font-size: clamp(28px, 4.6vw, 54px); line-height: 1.1; font-weight: 800; margin-bottom: 26px; }
+  p.lead { font-size: clamp(18px, 2.4vw, 30px); color: #c3c9d9; margin-top: 22px; line-height: 1.35; }
+  ul { list-style: none; }
+  li { font-size: clamp(17px, 2.2vw, 28px); line-height: 1.35; padding: 11px 0 11px 30px; position: relative; color: #e3e7f1; border-bottom: 1px solid #1d2436; }
+  li:last-child { border-bottom: none; }
+  li::before { content: ""; position: absolute; left: 0; top: 22px; width: 12px; height: 12px; border-radius: 3px; background: linear-gradient(135deg,#9945ff,#14f195); }
+  .grad { background: linear-gradient(90deg,#9945ff,#14f195); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { background: #131a2b; border: 1px solid #2a3350; border-radius: 16px; padding: 20px; }
+  .card b { display: block; font-size: clamp(17px, 2vw, 24px); margin-bottom: 8px; }
+  .card span { color: #aab2c8; font-size: clamp(14px, 1.6vw, 19px); line-height: 1.35; }
+  .card .out { display: block; margin-top: 12px; color: #14f195; font-weight: 700; font-size: clamp(14px, 1.6vw, 19px); }
+  table { border-collapse: collapse; width: 100%; max-width: 900px; font-size: clamp(17px, 2.1vw, 26px); }
+  td { padding: 12px 14px; border-bottom: 1px solid #1d2436; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+  tr.hl td { color: #14f195; }
+  .nav { position: fixed; bottom: 16px; left: 0; right: 0; text-align: center; font-size: 13px; color: #5e6782; }
+  .tapzone { position: fixed; inset: 0; display: flex; }
+  .tapzone div { flex: 1; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<section class="slide on">
+  <div class="tag">Colosseum Eternal · Week 2</div>
+  <h1><span class="grad">UltraRentz</span></h1>
+  <p class="lead">Your deposit comes back automatically. The landlord can't sit on it — and if they claim damage, they have to prove it.</p>
+  <p class="lead" style="font-size:18px;margin-top:40px;color:#7d87a3">Ben Ogungbeje · Founder</p>
+</section>
+
+<section class="slide">
+  <div class="tag">Shipped this week · 1</div>
+  <h2>Keeper bot: release is now truly automatic</h2>
+  <div class="grid">
+    <div class="card"><b>Landlord silent</b><span>Claim window closes with no claim</span><span class="out">→ keeper refunds tenant + yield</span></div>
+    <div class="card"><b>One-click release</b><span>Landlord approves at move-out</span><span class="out">→ keeper pays tenant instantly</span></div>
+    <div class="card"><b>Dispute</b><span>Landlord claims, 3 DAO jurors vote</span><span class="out">→ keeper settles lower-median award</span></div>
+  </div>
+  <p class="lead">No one has to press a button. Every scenario tested end-to-end on-chain.</p>
+</section>
+
+<section class="slide">
+  <div class="tag">Shipped this week · 2</div>
+  <h2>Agent-first: yield split 60 / 20 / 5 / 15</h2>
+  <table>
+    <tr><td>Deposit returned to tenant</td><td class="n">1,200.00</td></tr>
+    <tr><td>Yield earned</td><td class="n">36.00</td></tr>
+    <tr><td>Tenant · 60%</td><td class="n">21.60</td></tr>
+    <tr><td>Landlord · 20%</td><td class="n">7.20</td></tr>
+    <tr><td>Letting agent · 5%</td><td class="n">1.80</td></tr>
+    <tr class="hl"><td>UltraRentz · 15%</td><td class="n">5.40</td></tr>
+  </table>
+  <p class="lead">Principal is never split. No agent → agent's share goes to the tenant.</p>
+</section>
+
+<section class="slide">
+  <div class="tag">What we prioritised</div>
+  <h2>Sell to agents. Win in Ireland.</h2>
+  <ul>
+    <li><b>Agents, not single landlords</b> — one agent onboards hundreds of deposits</li>
+    <li><b>Ireland first</b> — deposit protection legislated in 2015, never commenced</li>
+    <li><b>England as test market</b> — test tokens only</li>
+    <li><b>Revenue:</b> per-tenancy agent fees as the base; yield share as upside</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="tag">Challenges</div>
+  <h2>What was hard</h2>
+  <ul>
+    <li><b>Four-way split without losing a cent</b> — rounding dust goes to the tenant; every token accounted for</li>
+    <li><b>Optional agent account</b> — settle must work with or without one, and verify it's the right wallet</li>
+    <li><b>Devnet faucet rate limits</b> — slowed our deploy; demo runs on a validator</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <div class="tag">Next week</div>
+  <h2>From demo to pilot</h2>
+  <ul>
+    <li>Real yield via a Solana lending market (Kamino / Jupiter Lend)</li>
+    <li>Web app for agents, tenants and jurors</li>
+    <li>First conversations with Irish letting agents</li>
+  </ul>
+  <p class="lead" style="margin-top:30px">Thank you 🙏</p>
+</section>
+
+<div class="tapzone"><div id="prev"></div><div id="next"></div></div>
+<div class="nav" id="nav"></div>
+
+<script>
+  const s = [...document.querySelectorAll('.slide')];
+  let i = 0;
+  const show = n => { i = Math.max(0, Math.min(s.length - 1, n)); s.forEach((el, k) => el.classList.toggle('on', k === i)); document.getElementById('nav').textContent = `${i + 1} / ${s.length} · → / ← to move`; };
+  document.getElementById('next').onclick = () => show(i + 1);
+  document.getElementById('prev').onclick = () => show(i - 1);
+  document.addEventListener('keydown', e => { if (['ArrowRight',' ','PageDown'].includes(e.key)) show(i + 1); if (['ArrowLeft','PageUp'].includes(e.key)) show(i - 1); });
+  show(0);
+</script>
+</body>
+</html>

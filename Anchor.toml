@@ -11,6 +11,7 @@ ultrarentz = "13BK4Z9HZ2GWGzqHjPTDGW4Ayh9jN6iqPCkekCpfATzX"
 
 [programs.localnet]
 ultrarentz = "13BK4Z9HZ2GWGzqHjPTDGW4Ayh9jN6iqPCkekCpfATzX"
+mock_lending = "73ZmGvzn29yTfZqwebHh8cXrcNS6TFRxXWVu5rKyYpWQ"
 
 [registry]
 url = "https://api.apr.dev"

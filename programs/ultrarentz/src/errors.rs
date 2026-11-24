@@ -42,4 +42,14 @@ pub enum UrError {
     InvalidSplit,
     #[msg("Agent token account missing or wrong")]
     AgentAccountMissing,
+    #[msg("No lending program configured, or wrong lending program passed")]
+    YieldNotConfigured,
+    #[msg("Deposit is already in the lending market")]
+    YieldAlreadyActive,
+    #[msg("Deposit is not in the lending market")]
+    YieldNotActive,
+    #[msg("Withdraw the deposit from the lending market before settling")]
+    YieldStillDeployed,
+    #[msg("Lending accounts passed in the wrong order or with wrong keys")]
+    BadYieldAccounts,
 }

@@ -4,7 +4,8 @@
  *   npm run demo -- dispute   # landlord claims, 3 DAO jurors vote, settle (Week 1 flow)
  *   npm run demo -- auto      # landlord stays silent → keeper auto-refunds tenant with yield
  *   npm run demo -- release   # landlord one-click approves → keeper pays tenant immediately
- *   npm run demo -- all       # run all three
+ *   npm run demo -- lending   # deposit parked in a lending market, withdrawn + settled by keeper
+ *   npm run demo -- all       # run all four
  */
 import { BN } from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
@@ -14,6 +15,8 @@ import {
   Ctx, loadProgram, ensureConfig, fund, createTenancy, waitForChainTime, log, fmt, UNIT, DEMO_WINDOW_SECS,
 } from "./common";
 import { runOnce } from "./keeper";
+import { loadAdapter, depositToYieldIx } from "./yield";
+import { Transaction } from "@solana/web3.js";
 
 const DEPOSIT = 1_200 * UNIT;
 const YIELD = 36 * UNIT;
@@ -105,6 +108,35 @@ async function scenarioRelease(ctx: Ctx, mint: any) {
   console.log(`📊 Tenant ${fmt(await balance(ctx, mint, tenant.publicKey))} — paid out immediately, no waiting window`);
 }
 
+async function scenarioLending(ctx: Ctx, mint: any) {
+  console.log("\n━━━━━━━━ Scenario 4: Deposit earns in a lending market (Jupiter Lend Earn interface) ━━━━━━━━");
+  const adapter = await loadAdapter(ctx, mint);
+  const cfgSig = await ctx.program.methods
+    .setYieldProgram(adapter.programId)
+    .accountsPartial({ admin: ctx.admin.publicKey, config: ctx.configPda })
+    .rpc();
+  log(ctx, `Protocol pointed at lending program: ${adapter.name}`, cfgSig);
+
+  const tenant = Keypair.generate(), landlord = Keypair.generate();
+  await fund(ctx, [tenant]);
+  const t = await createTenancy(ctx, mint, tenant, landlord.publicKey, DEPOSIT, 20);
+  log(ctx, `Tenant locked ${fmt(DEPOSIT)} tUSDC in escrow`, t.sig);
+
+  const sig = await ctx.provider.sendAndConfirm(new Transaction().add(await depositToYieldIx(ctx, adapter, t.tenancy, mint)));
+  log(ctx, `Deposit moved into the lending market (vault now ${fmt((await getAccount(ctx.conn, t.vault)).amount)})`, sig);
+
+  console.log(`\n⏳ Tenancy ends, claim window (${DEMO_WINDOW_SECS}s) passes with no claim…`);
+  await waitForChainTime(ctx, t.endTs + DEMO_WINDOW_SECS + 1);
+  await keeperUntilSettled(ctx);
+  const tenantBal = await balance(ctx, mint, tenant.publicKey);
+  const landlordBal = await balance(ctx, mint, landlord.publicKey);
+  const interest = Number(tenantBal) + Number(landlordBal) - DEPOSIT;
+  console.log(`📊 Interest earned in lending market ≈ ${fmt(Math.round(interest / 0.85))} (3% mock rate)`);
+  console.log(`   Tenant   ${fmt(tenantBal)}  (deposit + 65% of interest — no agent, so agent share goes to tenant)`);
+  console.log(`   Landlord ${fmt(landlordBal)}  (20% of interest)`);
+  console.log(`   UltraRentz 15% of interest → treasury`);
+}
+
 async function main() {
   const which = process.argv[2] ?? "all";
   const ctx = loadProgram();
@@ -116,6 +148,7 @@ async function main() {
   if (which === "dispute" || which === "all") await scenarioDispute(ctx, mint, jurors);
   if (which === "auto" || which === "all") await scenarioAuto(ctx, mint);
   if (which === "release" || which === "all") await scenarioRelease(ctx, mint);
+  if (which === "lending" || which === "all") await scenarioLending(ctx, mint);
   console.log("\n🎉 Done.");
 }
 

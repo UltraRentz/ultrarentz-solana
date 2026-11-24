@@ -3,3 +3,5 @@ target/
 node_modules/
 test-ledger/
 .demo/
+app/node_modules/
+app/dist/

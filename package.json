@@ -5,7 +5,9 @@
     "demo": "ts-node scripts/demo.ts",
     "keeper": "ts-node scripts/keeper.ts",
     "typecheck": "tsc --noEmit",
-    "security": "ts-node scripts/security-checks.ts"
+    "security": "ts-node scripts/security-checks.ts",
+    "local": "ts-node scripts/local.ts",
+    "app": "cd app && npm install && npm run dev"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",

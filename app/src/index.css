@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #f0f4ff, #fefefe);
+  color: #111;
+  min-height: 100vh;
+}
+.dark body { background: linear-gradient(135deg, #0f172a, #111827); color: #f3f4f6; }
+
+/* Wallet button in brand blue */
+.wallet-adapter-button-trigger { background-color: #2563eb !important; border-radius: 0.75rem !important; font-family: "Inter", sans-serif !important; height: 42px !important; font-size: 14px !important; }

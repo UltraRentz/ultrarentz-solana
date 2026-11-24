@@ -1,0 +1,2003 @@
+{
+  "address": "13BK4Z9HZ2GWGzqHjPTDGW4Ayh9jN6iqPCkekCpfATzX",
+  "metadata": {
+    "name": "ultrarentz",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "UltraRentz: yield-bearing rent deposits with automated release and DAO dispute resolution"
+  },
+  "instructions": [
+    {
+      "name": "accept_claim",
+      "docs": [
+        "Tenant accepts the landlord's claim — settles without a vote."
+      ],
+      "discriminator": [
+        139,
+        66,
+        180,
+        182,
+        209,
+        194,
+        173,
+        87
+      ],
+      "accounts": [
+        {
+          "name": "tenant",
+          "signer": true,
+          "relations": [
+            "tenancy"
+          ]
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "approve_release",
+      "docs": [
+        "Landlord one-click approves full return — the \"instant release\" path."
+      ],
+      "discriminator": [
+        110,
+        173,
+        58,
+        175,
+        146,
+        128,
+        138,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "landlord",
+          "signer": true,
+          "relations": [
+            "tenancy"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cast_vote",
+      "docs": [
+        "A juror votes how much of the claim the landlord should receive (0..=claim)."
+      ],
+      "discriminator": [
+        20,
+        212,
+        15,
+        189,
+        69,
+        180,
+        69,
+        151
+      ],
+      "accounts": [
+        {
+          "name": "juror",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "award",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_tenancy",
+      "docs": [
+        "Tenant locks the deposit. `end_ts = 0` for a periodic/rolling tenancy."
+      ],
+      "discriminator": [
+        61,
+        106,
+        245,
+        51,
+        206,
+        170,
+        30,
+        81
+      ],
+      "accounts": [
+        {
+          "name": "tenant",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "landlord"
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "tenancy",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  110,
+                  97,
+                  110,
+                  99,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tenant"
+              },
+              {
+                "kind": "account",
+                "path": "landlord"
+              },
+              {
+                "kind": "arg",
+                "path": "tenancy_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "tenancy"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "tenant_token",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "tenancy_id",
+          "type": "u64"
+        },
+        {
+          "name": "principal",
+          "type": "u64"
+        },
+        {
+          "name": "end_ts",
+          "type": "i64"
+        },
+        {
+          "name": "agent",
+          "type": {
+            "option": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "deposit_to_yield",
+      "docs": [
+        "Move the whole vault into the lending market (permissionless: tenant, agent or keeper).",
+        "`remaining_accounts` = the lending program's deposit accounts, in its documented order."
+      ],
+      "discriminator": [
+        30,
+        86,
+        121,
+        108,
+        211,
+        165,
+        8,
+        10
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "tenancy"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "tenancy"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "f_token_mint",
+          "docs": [
+            "The lending market's share token (Jupiter: jlToken)."
+          ]
+        },
+        {
+          "name": "shares_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "tenancy"
+              },
+              {
+                "kind": "account",
+                "path": "shares_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "f_token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "lending_program"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "shares_token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "treasury"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "dao_authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "yield_split",
+          "type": {
+            "defined": {
+              "name": "YieldSplit"
+            }
+          }
+        },
+        {
+          "name": "claim_window_secs",
+          "type": "i64"
+        },
+        {
+          "name": "voting_period_secs",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "raise_claim",
+      "docs": [
+        "Landlord claims a deduction with an evidence hash, inside the claim window."
+      ],
+      "discriminator": [
+        82,
+        27,
+        166,
+        20,
+        46,
+        132,
+        162,
+        69
+      ],
+      "accounts": [
+        {
+          "name": "landlord",
+          "signer": true,
+          "relations": [
+            "tenancy"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "evidence_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "evidence_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "serve_notice",
+      "docs": [
+        "Either party sets the end date on a rolling tenancy (notice period agreed off-chain)."
+      ],
+      "discriminator": [
+        108,
+        185,
+        106,
+        131,
+        238,
+        197,
+        99,
+        146
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "end_ts",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "set_jurors",
+      "docs": [
+        "DAO authority sets the juror panel and quorum."
+      ],
+      "discriminator": [
+        115,
+        242,
+        165,
+        231,
+        192,
+        157,
+        178,
+        208
+      ],
+      "accounts": [
+        {
+          "name": "dao_authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "jurors",
+          "type": {
+            "vec": "pubkey"
+          }
+        },
+        {
+          "name": "quorum",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "set_yield_program",
+      "docs": [
+        "Admin points the protocol at a lending program (Jupiter Lend Earn). Default = none."
+      ],
+      "discriminator": [
+        97,
+        131,
+        105,
+        226,
+        92,
+        182,
+        228,
+        44
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "yield_program",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "settle",
+      "docs": [
+        "Permissionless crank: pays everyone out and closes the vault.",
+        "Works for: auto-release after the claim window, resolved cases, and finished votes."
+      ],
+      "discriminator": [
+        175,
+        42,
+        185,
+        87,
+        144,
+        131,
+        102,
+        212
+      ],
+      "accounts": [
+        {
+          "name": "cranker",
+          "docs": [
+            "Anyone can crank settlement (a keeper bot in production)."
+          ],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "config",
+            "tenancy"
+          ]
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "tenancy"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "tenant",
+          "writable": true,
+          "relations": [
+            "tenancy"
+          ]
+        },
+        {
+          "name": "landlord",
+          "relations": [
+            "tenancy"
+          ]
+        },
+        {
+          "name": "tenant_token",
+          "writable": true
+        },
+        {
+          "name": "landlord_token",
+          "writable": true
+        },
+        {
+          "name": "agent_token",
+          "docs": [
+            "Required only when the tenancy has an agent (checked in the handler)."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "treasury",
+          "writable": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "submit_tenant_evidence",
+      "docs": [
+        "Optional tenant counter-evidence. Not responding never counts against the tenant."
+      ],
+      "discriminator": [
+        12,
+        66,
+        252,
+        146,
+        236,
+        14,
+        227,
+        47
+      ],
+      "accounts": [
+        {
+          "name": "tenant",
+          "signer": true,
+          "relations": [
+            "tenancy"
+          ]
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "evidence_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "evidence_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "update_params",
+      "discriminator": [
+        108,
+        178,
+        190,
+        95,
+        94,
+        203,
+        116,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "yield_split",
+          "type": {
+            "defined": {
+              "name": "YieldSplit"
+            }
+          }
+        },
+        {
+          "name": "claim_window_secs",
+          "type": "i64"
+        },
+        {
+          "name": "voting_period_secs",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_from_yield",
+      "docs": [
+        "Pull everything (principal + interest) back from the lending market into the vault.",
+        "Permissionless; the keeper sends this together with `settle`."
+      ],
+      "discriminator": [
+        143,
+        188,
+        122,
+        175,
+        53,
+        205,
+        204,
+        15
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "tenancy"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "tenancy"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "f_token_mint"
+        },
+        {
+          "name": "shares_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "tenancy"
+              },
+              {
+                "kind": "account",
+                "path": "shares_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "f_token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "lending_program"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "shares_token_program"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "Tenancy",
+      "discriminator": [
+        251,
+        53,
+        106,
+        214,
+        69,
+        170,
+        131,
+        234
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ClaimAccepted",
+      "discriminator": [
+        170,
+        62,
+        105,
+        181,
+        48,
+        158,
+        129,
+        65
+      ]
+    },
+    {
+      "name": "ClaimRaised",
+      "discriminator": [
+        52,
+        31,
+        221,
+        148,
+        147,
+        197,
+        161,
+        43
+      ]
+    },
+    {
+      "name": "DepositLocked",
+      "discriminator": [
+        32,
+        241,
+        131,
+        66,
+        63,
+        132,
+        192,
+        116
+      ]
+    },
+    {
+      "name": "NoticeServed",
+      "discriminator": [
+        34,
+        168,
+        195,
+        10,
+        76,
+        188,
+        123,
+        185
+      ]
+    },
+    {
+      "name": "ReleaseApproved",
+      "discriminator": [
+        246,
+        7,
+        17,
+        99,
+        160,
+        10,
+        151,
+        253
+      ]
+    },
+    {
+      "name": "Settled",
+      "discriminator": [
+        232,
+        210,
+        40,
+        17,
+        142,
+        124,
+        145,
+        238
+      ]
+    },
+    {
+      "name": "TenantEvidence",
+      "discriminator": [
+        33,
+        86,
+        186,
+        39,
+        8,
+        169,
+        222,
+        134
+      ]
+    },
+    {
+      "name": "VoteCast",
+      "discriminator": [
+        39,
+        53,
+        195,
+        104,
+        188,
+        17,
+        225,
+        213
+      ]
+    },
+    {
+      "name": "YieldDeposited",
+      "discriminator": [
+        240,
+        44,
+        237,
+        73,
+        80,
+        47,
+        196,
+        86
+      ]
+    },
+    {
+      "name": "YieldWithdrawn",
+      "discriminator": [
+        175,
+        101,
+        144,
+        232,
+        244,
+        176,
+        99,
+        108
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "ZeroDeposit",
+      "msg": "Deposit must be greater than zero"
+    },
+    {
+      "code": 6001,
+      "name": "SameParty",
+      "msg": "Tenant and landlord must be different wallets"
+    },
+    {
+      "code": 6002,
+      "name": "NotAParty",
+      "msg": "Signer is not a party to this tenancy"
+    },
+    {
+      "code": 6003,
+      "name": "WrongStatus",
+      "msg": "Tenancy is not in the required status for this action"
+    },
+    {
+      "code": 6004,
+      "name": "EndAlreadySet",
+      "msg": "End date has already been set"
+    },
+    {
+      "code": 6005,
+      "name": "EndInPast",
+      "msg": "End date must not be in the past"
+    },
+    {
+      "code": 6006,
+      "name": "NotEnded",
+      "msg": "Tenancy has not ended yet"
+    },
+    {
+      "code": 6007,
+      "name": "ClaimWindowClosed",
+      "msg": "The landlord claim window has closed"
+    },
+    {
+      "code": 6008,
+      "name": "ClaimWindowOpen",
+      "msg": "The landlord claim window is still open"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidClaim",
+      "msg": "Claim must be > 0 and <= the deposit"
+    },
+    {
+      "code": 6010,
+      "name": "NotJuror",
+      "msg": "Signer is not an active juror"
+    },
+    {
+      "code": 6011,
+      "name": "ConflictOfInterest",
+      "msg": "Parties to a tenancy cannot vote on it"
+    },
+    {
+      "code": 6012,
+      "name": "AlreadyVoted",
+      "msg": "Juror has already voted"
+    },
+    {
+      "code": 6013,
+      "name": "VotingClosed",
+      "msg": "Voting period has ended"
+    },
+    {
+      "code": 6014,
+      "name": "VotingOpen",
+      "msg": "Voting period is still open"
+    },
+    {
+      "code": 6015,
+      "name": "AwardTooHigh",
+      "msg": "Award cannot exceed the claimed amount"
+    },
+    {
+      "code": 6016,
+      "name": "TooManyJurors",
+      "msg": "Too many jurors"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidParam",
+      "msg": "Invalid parameter"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidSplit",
+      "msg": "Yield split must add up to 100%"
+    },
+    {
+      "code": 6019,
+      "name": "AgentAccountMissing",
+      "msg": "Agent token account missing or wrong"
+    },
+    {
+      "code": 6020,
+      "name": "YieldNotConfigured",
+      "msg": "No lending program configured, or wrong lending program passed"
+    },
+    {
+      "code": 6021,
+      "name": "YieldAlreadyActive",
+      "msg": "Deposit is already in the lending market"
+    },
+    {
+      "code": 6022,
+      "name": "YieldNotActive",
+      "msg": "Deposit is not in the lending market"
+    },
+    {
+      "code": 6023,
+      "name": "YieldStillDeployed",
+      "msg": "Withdraw the deposit from the lending market before settling"
+    },
+    {
+      "code": 6024,
+      "name": "BadYieldAccounts",
+      "msg": "Lending accounts passed in the wrong order or with wrong keys"
+    }
+  ],
+  "types": [
+    {
+      "name": "ClaimAccepted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ClaimRaised",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "evidence_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "evidence_uri",
+            "type": "string"
+          },
+          {
+            "name": "voting_ends_ts",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "docs": [
+        "Global protocol settings (one per deployment)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "docs": [
+              "Can change economic parameters."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "dao_authority",
+            "docs": [
+              "Controls the juror set. Start as Ben's wallet; move to a Squads multisig / Realms DAO in the sprint."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "docs": [
+              "Deposit currency (USDC on mainnet, a test mint on devnet)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "docs": [
+              "Token account that receives the protocol's cut of yield."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "yield_split",
+            "docs": [
+              "How yield is shared (tenant / landlord / agent / UltraRentz). Principal is never split."
+            ],
+            "type": {
+              "defined": {
+                "name": "YieldSplit"
+              }
+            }
+          },
+          {
+            "name": "claim_window_secs",
+            "docs": [
+              "After tenancy end, how long the landlord has to raise a claim before auto-release."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "voting_period_secs",
+            "docs": [
+              "How long jurors have to vote once a claim is raised."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "yield_program",
+            "docs": [
+              "Lending program the vault deposits into (Jupiter Lend Earn). `Pubkey::default()` = no external yield."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "quorum",
+            "docs": [
+              "Minimum votes for a DAO decision. Below quorum the tenant gets the full deposit."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "juror_count",
+            "type": "u8"
+          },
+          {
+            "name": "jurors",
+            "type": {
+              "array": [
+                "pubkey",
+                9
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DepositLocked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "tenant",
+            "type": "pubkey"
+          },
+          {
+            "name": "landlord",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "principal",
+            "type": "u64"
+          },
+          {
+            "name": "end_ts",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NoticeServed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "by",
+            "type": "pubkey"
+          },
+          {
+            "name": "end_ts",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReleaseApproved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Settled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "to_tenant",
+            "type": "u64"
+          },
+          {
+            "name": "to_landlord",
+            "type": "u64"
+          },
+          {
+            "name": "to_agent",
+            "type": "u64"
+          },
+          {
+            "name": "to_protocol",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Tenancy",
+      "docs": [
+        "One deposit for one tenancy. PDA: [\"tenancy\", tenant, landlord, tenancy_id]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenant",
+            "type": "pubkey"
+          },
+          {
+            "name": "landlord",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent",
+            "docs": [
+              "Letting agent that onboarded this deposit; `Pubkey::default()` = no agent."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "tenancy_id",
+            "type": "u64"
+          },
+          {
+            "name": "principal",
+            "type": "u64"
+          },
+          {
+            "name": "start_ts",
+            "type": "i64"
+          },
+          {
+            "name": "end_ts",
+            "docs": [
+              "0 = periodic / rolling tenancy with no end date yet (set later via `serve_notice`)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "TenancyStatus"
+              }
+            }
+          },
+          {
+            "name": "claim_amount",
+            "type": "u64"
+          },
+          {
+            "name": "landlord_evidence",
+            "docs": [
+              "Hash of the landlord's evidence bundle (photos, inventory, invoices) stored off-chain."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "tenant_evidence",
+            "docs": [
+              "Hash of the tenant's counter-evidence. Optional: an absent tenant is NOT penalised."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "voting_ends_ts",
+            "type": "i64"
+          },
+          {
+            "name": "vote_count",
+            "type": "u8"
+          },
+          {
+            "name": "voters",
+            "type": {
+              "array": [
+                "pubkey",
+                9
+              ]
+            }
+          },
+          {
+            "name": "votes",
+            "type": {
+              "array": [
+                "u64",
+                9
+              ]
+            }
+          },
+          {
+            "name": "landlord_award",
+            "docs": [
+              "Final amount going to the landlord once Resolved."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "yield_active",
+            "docs": [
+              "True while the deposit sits in the lending market; must be withdrawn before `settle`."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "yield_shares_account",
+            "docs": [
+              "Token account (owned by this tenancy PDA) holding the lending market's share tokens."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TenancyStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Claimed"
+          },
+          {
+            "name": "Resolved"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TenantEvidence",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "evidence_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "evidence_uri",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VoteCast",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "juror",
+            "type": "pubkey"
+          },
+          {
+            "name": "award",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "YieldDeposited",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "lending_program",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "YieldSplit",
+      "docs": [
+        "How yield (never principal) is shared. Must sum to 10,000 bps.",
+        "Default: 70% tenant / 20% landlord / 5% agent / 5% UltraRentz."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenant_bps",
+            "type": "u16"
+          },
+          {
+            "name": "landlord_bps",
+            "type": "u16"
+          },
+          {
+            "name": "agent_bps",
+            "type": "u16"
+          },
+          {
+            "name": "protocol_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "YieldWithdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "received",
+            "type": "u64"
+          },
+          {
+            "name": "interest",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

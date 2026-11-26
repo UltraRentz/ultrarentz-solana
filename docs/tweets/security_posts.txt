@@ -1,0 +1,46 @@
+Solana's compiler only warns you when a program overflows its 4KB stack. It doesn't stop the build.
+
+Ours overflowed. Our program holds tenants' rent deposits.
+
+What happened, and how we fixed it 🧵
+=====
+Every Solana program (code that runs on the blockchain) gets 4,096 bytes of stack per function: scratch memory for temporary values.
+
+Go past it and the program can overwrite values it was still using. In a deposit app, those values are money.
+=====
+Our "settle" step (it pays out a deposit) loads 8 accounts at once.
+
+Our build log showed its stack use reaching 5,232 bytes: 1,136 over the limit.
+
+The fix was "boxing": moving the big accounts to the heap (a larger memory area). Now: 0 warnings.
+=====
+Next we attacked the part that lends deposits out for interest. 5 attempts:
+
+✗ swap in an attacker's account
+✗ use an unapproved lending program
+✗ deposit twice
+✗ withdraw early to cost the tenant interest
+✗ pay out while funds are lent
+
+All 5 rejected.
+=====
+My take as a builder, not an official Solana rule: treat every stack warning as a bug.
+
+Solana's docs say it's only a warning because some libraries trip it in code you never call. That makes it easy to scroll past the one that matters.
+=====
+The honest limit: this is a devnet pilot (a test network with no real money).
+
+Our admin key can still upgrade the program, no one has audited it yet, and the lending test used a stand-in for the real lending market.
+
+Real deposits wait until that changes.
+=====
+3 takeaways:
+1. Solana's 4KB stack limit only warns
+2. Box large accounts
+3. Write the attack before an attacker does
+
+We're building UltraRentz in public: rent deposits that come back automatically.
+
+Which warning taught you the hard way?
+
+[SIGN-OFF: ask Ben]

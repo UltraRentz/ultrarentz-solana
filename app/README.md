@@ -19,9 +19,11 @@ solana config set --url localhost && solana airdrop 100
 export ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=~/.config/solana/id.json
 npm install
 npm run local -- setup          # prints the demo landlord address: copy it
-cd app && npm install && npm run dev
+cd app && npm install && VITE_RPC_URL=http://127.0.0.1:8899 npm run dev
 ```
-Open **http://localhost:5173**.
+Open **http://localhost:5173**. (Local runs need `VITE_RPC_URL=http://127.0.0.1:8899 npm run dev`; the default is now devnet.)
+
+**Live (devnet):** https://ultrarentz.github.io/ultrarentz-solana/ (built automatically from `main` by `.github/workflows/pages.yml`).
 
 **In the browser**
 1. **Select Wallet → Burner Wallet** (a demo wallet stored in this browser only). Copy its address from the button.

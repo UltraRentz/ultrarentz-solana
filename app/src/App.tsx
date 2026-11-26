@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import PayDepositForm from "./components/PayDepositForm";
 import StatCard from "./components/StatCard";
 import TenancyCard from "./components/TenancyCard";
+import LandlordView from "./components/LandlordView";
 import {
   CLUSTER_LABEL, CONFIG_PDA, Config, Tenancy, fetchMyTenancies, fmt, fmtDuration, phaseOf, tenantYieldBps, toConfig, useProgram,
 } from "./lib/program";
@@ -23,6 +24,9 @@ export default function App() {
   const [toast, setToast] = useState<Toast>(null);
   const [dark, setDark] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"tenant" | "landlord">(() => (location.hash === "#landlord" ? "landlord" : "tenant"));
+  const [refreshKey, setRefreshKey] = useState(0);
+  useEffect(() => { history.replaceState(null, "", tab === "landlord" ? "#landlord" : "#tenant"); }, [tab]);
   const [paid, setPaid] = useState<{ id: string; principal: number; at: number }[]>([]);
   const seen = useRef<Map<string, Tenancy>>(new Map());
 
@@ -74,6 +78,7 @@ export default function App() {
       const sig = await fn();
       setToast({ kind: "ok", text: `${label}: done`, sig });
       setTimeout(() => setToast((t) => (t?.sig === sig ? null : t)), 6000);
+      setRefreshKey((k) => k + 1);
       await refresh();
     } catch (e: any) {
       const logs: string[] = e?.logs ?? [];
@@ -102,9 +107,15 @@ export default function App() {
           <div className="flex items-center gap-6">
             <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-300">UltraRentz</span>
             <nav className="hidden sm:flex gap-1">
-              <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-semibold text-sm">My deposit</span>
-              <span className="px-3 py-1.5 rounded-lg text-gray-400 text-sm cursor-not-allowed" title="Coming soon">Agents</span>
-              <span className="px-3 py-1.5 rounded-lg text-gray-400 text-sm cursor-not-allowed" title="Coming soon">Disputes</span>
+              {(["tenant", "landlord"] as const).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setTab(k)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${tab === k ? "bg-primary/10 text-primary" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
+                >
+                  {k === "tenant" ? "I'm a tenant" : "Landlord / Agent"}
+                </button>
+              ))}
             </nav>
           </div>
           <div className="flex items-center gap-3">
@@ -119,15 +130,28 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Your deposit, protected and earning</h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            {tab === "tenant" ? "Your deposit, protected and earning" : "Deposits, handled for you"}
+          </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            It comes back automatically when you move out. If your landlord claims damage, they have to prove it.
+            {tab === "tenant"
+              ? "It comes back automatically when you move out. If your landlord claims damage, they have to prove it."
+              : "No deposit admin. Approve a release in one click, or raise an evidenced claim that independent jurors decide. You earn a share of the interest."}
           </p>
+          <div className="sm:hidden flex justify-center gap-2 mt-6">
+            {(["tenant", "landlord"] as const).map((k) => (
+              <button key={k} onClick={() => setTab(k)} className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${tab === k ? "bg-primary text-white" : "bg-white text-gray-600"}`}>
+                {k === "tenant" ? "I'm a tenant" : "Landlord / Agent"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {!publicKey ? (
           <div className="max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
-            <p className="text-gray-700 dark:text-gray-300 mb-6">Connect your wallet to see your deposit.</p>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
+              {tab === "tenant" ? "Connect your wallet to see your deposit." : "Connect your wallet to see the deposits held for you."}
+            </p>
             <div className="flex justify-center"><WalletMultiButton /></div>
             <ul className="text-left text-sm text-gray-600 dark:text-gray-400 mt-8 space-y-2">
               <li>✅ Held by software, not by your landlord</li>
@@ -138,6 +162,8 @@ export default function App() {
           </div>
         ) : loadError ? (
           <div className="max-w-2xl mx-auto bg-red-50 text-error rounded-xl p-6">{loadError}</div>
+        ) : tab === "landlord" ? (
+          cfg && program && publicKey && <LandlordView program={program} me={publicKey} cfg={cfg} now={now} run={run} refreshKey={refreshKey} />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
@@ -192,7 +218,7 @@ export default function App() {
       )}
 
       <footer className="text-center text-xs text-gray-400 py-10">
-        UltraRentz · test tokens only · program {(CONFIG_PDA && "13BK…TzX")}
+        UltraRentz · test tokens only · Solana {CLUSTER_LABEL} · program 13BK…TzX
       </footer>
     </div>
   );

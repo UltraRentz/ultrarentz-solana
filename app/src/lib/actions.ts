@@ -83,3 +83,18 @@ export async function releaseNow(program: Program, cfg: Config, t: Tenancy) {
     .preInstructions(pre)
     .rpc();
 }
+
+// ---------------------------------------------------------------- landlord actions
+
+export const approveRelease = (program: Program, t: Tenancy) =>
+  program.methods
+    .approveRelease()
+    .accountsPartial({ landlord: me(program), config: CONFIG_PDA, tenancy: t.address })
+    .rpc();
+
+export async function raiseClaim(program: Program, t: Tenancy, amount: number, evidence: string) {
+  return program.methods
+    .raiseClaim(new BN(amount), await sha256(evidence), evidence.slice(0, 200))
+    .accountsPartial({ landlord: me(program), config: CONFIG_PDA, tenancy: t.address })
+    .rpc();
+}

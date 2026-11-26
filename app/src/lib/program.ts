@@ -4,7 +4,7 @@ import { PublicKey } from "@solana/web3.js";
 import { useMemo } from "react";
 import idl from "../idl/ultrarentz.json";
 
-export const RPC_URL: string = import.meta.env.VITE_RPC_URL ?? "http://127.0.0.1:8899";
+export const RPC_URL: string = import.meta.env.VITE_RPC_URL ?? "https://api.devnet.solana.com";
 export const CLUSTER_LABEL = RPC_URL.includes("devnet") ? "Devnet" : RPC_URL.includes("127.0.0.1") || RPC_URL.includes("localhost") ? "Local validator" : "Mainnet";
 export const PROGRAM_ID = new PublicKey((idl as { address: string }).address);
 export const DECIMALS = 6;
@@ -86,6 +86,21 @@ export function toConfig(a: any): Config {
     quorum: a.quorum,
     yieldSplit: a.yieldSplit,
   };
+}
+
+// Account layout offsets (8-byte discriminator, then tenant, landlord, agent — 32 bytes each).
+const OFFSET = { tenant: 8, landlord: 40, agent: 72 } as const;
+
+/** Tenancies where this wallet is the landlord or the letting agent. */
+export async function fetchManagedTenancies(program: Program, me: PublicKey): Promise<{ t: Tenancy; role: "landlord" | "agent" }[]> {
+  const q = (offset: number) =>
+    (program.account as any).tenancy.all([{ memcmp: { offset, bytes: me.toBase58() } }]);
+  const [asLandlord, asAgent] = await Promise.all([q(OFFSET.landlord), q(OFFSET.agent)]);
+  const rows = [
+    ...asLandlord.map((r: any) => ({ t: toTenancy(r.publicKey, r.account), role: "landlord" as const })),
+    ...asAgent.map((r: any) => ({ t: toTenancy(r.publicKey, r.account), role: "agent" as const })),
+  ];
+  return rows.sort((a, b) => b.t.startTs - a.t.startTs);
 }
 
 /** Fetch every tenancy where this wallet is the tenant (tenant is the first field after the 8-byte discriminator). */

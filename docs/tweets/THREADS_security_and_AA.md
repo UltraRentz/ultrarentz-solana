@@ -11,7 +11,7 @@
 - Overruns are reported as a **warning, not an error**, "because some dependent crates may include functionality that violates the stack frame restrictions even if the program doesn't use that functionality" → Solana docs, Programs FAQ.
 - Exceeding the frame can corrupt variables of the previous stack frame → OtterSec (Robert Chen), "Safe Solana Stack Smashing", Breakpoint 2024.
 - **5,232 bytes / 1,136 over** → our own build log (`Settle` account loading: "Stack offset of 5232 exceeded max offset of 4096 by 1136 bytes"), 15 Nov 2026. After boxing: 0 stack warnings.
-- **8 accounts** in `settle` (config, mint, tenancy, vault, tenant token, landlord token, agent token, treasury) → our code at the time of the fix had 7 token/data accounts + config; post 3 says "8 accounts" counting the current `Settle` struct's data accounts. ✔ (current struct: config, mint, tenancy, vault, tenant_token, landlord_token, agent_token, treasury = 8).
+- **8 accounts**: today's `Settle` loads 8 data accounts (config, mint, tenancy, vault, tenant token, landlord token, agent token, treasury) → our code.
 - **5 of 5 attacks rejected** → our `npm run security`, 24 Nov 2026.
 - Devnet deploy, upgrade authority = admin wallet, no audit → true as of 26 Nov 2026.
 

@@ -1,3 +1,5 @@
+> ⚠️ Superseded: these drafts predate the tweet format brief. Use docs/tweets/THREADS_security_and_AA.md.
+
 # UltraRentz — tweets
 
 ## Day 1 (26 Nov): live on devnet — thread

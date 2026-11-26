@@ -93,11 +93,14 @@ Real Jupiter: the `@jup-ag/lend` SDK currently targets **mainnet** markets only,
 
 ## Build from source
 
-Recent crates need Rust ≥ 1.85, but the platform-tools bundled with Solana 2.3 ship Rust 1.84. Use platform-tools v1.52:
+Recent crates need Rust ≥ 1.85, but the platform-tools bundled with Solana 2.3 ship Rust 1.84. Use platform-tools v1.52. On newer Solana CLIs (which default to SBPFv3) also pass `--arch v0`, the format devnet/mainnet run today:
 
 ```bash
-cargo build-sbf --tools-version v1.52 --manifest-path programs/ultrarentz/Cargo.toml
-anchor idl build -o target/idl/ultrarentz.json
+cargo build-sbf --tools-version v1.52 --arch v0 --manifest-path programs/ultrarentz/Cargo.toml
+cargo build-sbf --tools-version v1.52 --arch v0 --manifest-path programs/mock_lending/Cargo.toml
+mkdir -p target/idl
+anchor idl build -p ultrarentz -o target/idl/ultrarentz.json
+anchor idl build -p mock_lending -o target/idl/mock_lending.json
 cargo test -p ultrarentz            # unit tests (settlement maths)
 ```
 

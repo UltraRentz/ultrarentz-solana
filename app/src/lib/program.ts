@@ -41,6 +41,7 @@ export interface Tenancy {
   voteCount: number;
   landlordAward: number;
   yieldActive: boolean;
+  agentApproved: boolean;
 }
 
 export interface Config {
@@ -74,6 +75,7 @@ export function toTenancy(address: PublicKey, a: any): Tenancy {
     voteCount: a.voteCount,
     landlordAward: Number(a.landlordAward),
     yieldActive: a.yieldActive,
+    agentApproved: a.agentApproved,
   };
 }
 
@@ -156,3 +158,18 @@ export function phaseOf(t: Tenancy, cfg: Config, now: number): Phase {
 /** The tenant's share of interest, in basis points (agent's share goes to the tenant when there is no agent). */
 export const tenantYieldBps = (t: Tenancy, cfg: Config) =>
   cfg.yieldSplit.tenantBps + (hasAgent(t) ? 0 : cfg.yieldSplit.agentBps);
+
+export const agentProfilePda = (agent: PublicKey) =>
+  PublicKey.findProgramAddressSync([Buffer.from("agent"), agent.toBuffer()], PROGRAM_ID)[0];
+
+export interface AgentProfile { name: string; active: boolean }
+
+/** Registered agent profile, or null if this wallet isn't a registered agent. */
+export async function fetchAgentProfile(program: Program, agent: PublicKey): Promise<AgentProfile | null> {
+  try {
+    const a: any = await (program.account as any).agentProfile.fetch(agentProfilePda(agent));
+    return { name: a.name, active: a.active };
+  } catch {
+    return null;
+  }
+}

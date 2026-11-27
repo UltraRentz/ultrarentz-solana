@@ -4,7 +4,7 @@
  */
 import { Keypair, PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
-import { loadProgram, ensureConfig, fund, createTenancy, UNIT } from "./common";
+import { loadProgram, ensureConfig, fund, createTenancy, waitForChainTime, UNIT } from "./common";
 import { loadAdapter, depositToYieldIx, withdrawFromYieldIx } from "./yield";
 
 let passed = 0, failed = 0;
@@ -73,6 +73,55 @@ async function main() {
       landlordToken: landlordAta, agentToken: null, treasury: cfg.treasury, tokenProgram: TOKEN_PROGRAM_ID,
     }).rpc();
   });
+
+  // ---------------- Agents acting for landlords ----------------
+  const agentPda = (k: PublicKey) => PublicKey.findProgramAddressSync([Buffer.from("agent"), k.toBuffer()], ctx.program.programId)[0];
+  const asAgent = (who: Keypair, tenancy: PublicKey, withProfile: boolean) =>
+    ctx.program.methods.approveRelease()
+      .accountsPartial({ authority: who.publicKey, config: ctx.configPda, tenancy, agentProfile: withProfile ? agentPda(who.publicKey) : null })
+      .signers([who]).rpc();
+
+  // 6. Tenant names their OWN wallet as the "agent", then tries to release their own deposit.
+  const t2 = Keypair.generate(), l2 = Keypair.generate();
+  await fund(ctx, [t2, l2]);
+  const selfAgent = await createTenancy(ctx, mint, t2, l2.publicKey, 500 * UNIT, 3, t2.publicKey);
+  await waitForChainTime(ctx, selfAgent.endTs + 1);
+  await expectFail("Tenant names themselves as agent and releases their own deposit", "NotLandlordOrAgent", () =>
+    asAgent(t2, selfAgent.tenancy, false));
+
+  // 7. A registered agent the landlord has NOT approved.
+  const agent = Keypair.generate();
+  await fund(ctx, [agent]);
+  await ctx.program.methods.registerAgent("Test Lettings")
+    .accountsPartial({ admin: ctx.admin.publicKey, config: ctx.configPda, agent: agent.publicKey, agentProfile: agentPda(agent.publicKey), systemProgram: SystemProgram.programId }).rpc();
+  const t3 = Keypair.generate(), l3 = Keypair.generate();
+  await fund(ctx, [t3, l3]);
+  const withAgent = await createTenancy(ctx, mint, t3, l3.publicKey, 500 * UNIT, 3, agent.publicKey);
+  await waitForChainTime(ctx, withAgent.endTs + 1);
+  await expectFail("Registered agent acts before the landlord approves them", "NotLandlordOrAgent", () =>
+    asAgent(agent, withAgent.tenancy, true));
+
+  // 8. Someone other than the landlord tries to approve the agent.
+  await expectFail("Non-landlord approves an agent", "ConstraintHasOne", () =>
+    ctx.program.methods.setAgentApproval(true)
+      .accountsPartial({ landlord: t3.publicKey, tenancy: withAgent.tenancy, agentProfile: agentPda(agent.publicKey) })
+      .signers([t3]).rpc());
+
+  // Legit: landlord approves, then the agent releases.
+  await ctx.program.methods.setAgentApproval(true)
+    .accountsPartial({ landlord: l3.publicKey, tenancy: withAgent.tenancy, agentProfile: agentPda(agent.publicKey) })
+    .signers([l3]).rpc();
+
+  // 9. Suspended agent (approved by the landlord, but UltraRentz suspended them).
+  await ctx.program.methods.setAgentActive(false)
+    .accountsPartial({ admin: ctx.admin.publicKey, config: ctx.configPda, agentProfile: agentPda(agent.publicKey) }).rpc();
+  await expectFail("Suspended agent tries to act", "AgentNotRegistered", () => asAgent(agent, withAgent.tenancy, true));
+
+  // Re-activate: the approved agent can now act for the landlord.
+  await ctx.program.methods.setAgentActive(true)
+    .accountsPartial({ admin: ctx.admin.publicKey, config: ctx.configPda, agentProfile: agentPda(agent.publicKey) }).rpc();
+  await asAgent(agent, withAgent.tenancy, true);
+  console.log("   (approved, active agent released the deposit for the landlord ✓)");
 
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);

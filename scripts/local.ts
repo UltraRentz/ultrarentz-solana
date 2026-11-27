@@ -6,6 +6,8 @@
  *   npm run local -- claim <tenancy> <amt> # act as the demo landlord: raise a claim with evidence
  *   npm run local -- approve <tenancy>     # act as the demo landlord: approve full release
  *   npm run local -- vote <tenancy> <a,b,c># the 3 demo jurors vote these amounts
+ *   npm run local -- register-agent <wallet> "<name>"  # UltraRentz approves a letting agent
+ *   npm run local -- suspend-agent <wallet>            # UltraRentz suspends an agent
  */
 import { BN } from "@coral-xyz/anchor";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
@@ -53,12 +55,12 @@ async function main() {
     const evidence = "ipfs://demo/checkout-report-photos.zip";
     await ctx.program.methods
       .raiseClaim(new BN(Math.round(Number(a2 ?? "200") * UNIT)), [...createHash("sha256").update(evidence).digest()], evidence)
-      .accountsPartial({ landlord: landlord.publicKey, config: ctx.configPda, tenancy: new PublicKey(a1) })
+      .accountsPartial({ authority: landlord.publicKey, config: ctx.configPda, tenancy: new PublicKey(a1), agentProfile: null })
       .signers([landlord]).rpc();
     console.log(`Landlord claimed ${a2 ?? "200"} tUSDC on ${a1}`);
   } else if (cmd === "approve") {
     await ctx.program.methods.approveRelease()
-      .accountsPartial({ landlord: landlord.publicKey, config: ctx.configPda, tenancy: new PublicKey(a1) })
+      .accountsPartial({ authority: landlord.publicKey, config: ctx.configPda, tenancy: new PublicKey(a1), agentProfile: null })
       .signers([landlord]).rpc();
     console.log(`Landlord approved full release on ${a1}`);
   } else if (cmd === "vote") {
@@ -69,8 +71,21 @@ async function main() {
         .signers([jurors[i]]).rpc();
       console.log(`Juror ${i + 1} voted ${amounts[i]}`);
     }
+  } else if (cmd === "register-agent") {
+    const agentKey = new PublicKey(a1);
+    const [profile] = PublicKey.findProgramAddressSync([Buffer.from("agent"), agentKey.toBuffer()], ctx.program.programId);
+    await ctx.program.methods.registerAgent(a2 ?? "Demo Lettings")
+      .accountsPartial({ admin: ctx.admin.publicKey, config: ctx.configPda, agent: agentKey, agentProfile: profile, systemProgram: SystemProgram.programId })
+      .rpc();
+    console.log(`Registered agent ${agentKey.toBase58()} as "${a2 ?? "Demo Lettings"}"`);
+  } else if (cmd === "suspend-agent") {
+    const agentKey = new PublicKey(a1);
+    const [profile] = PublicKey.findProgramAddressSync([Buffer.from("agent"), agentKey.toBuffer()], ctx.program.programId);
+    await ctx.program.methods.setAgentActive(false)
+      .accountsPartial({ admin: ctx.admin.publicKey, config: ctx.configPda, agentProfile: profile }).rpc();
+    console.log(`Suspended agent ${agentKey.toBase58()}`);
   } else {
-    console.log("Usage: npm run local -- setup | fund <wallet> | claim <tenancy> <amount> | approve <tenancy> | vote <tenancy> <a,b,c>");
+    console.log("Usage: npm run local -- setup | fund <wallet> | claim <tenancy> <amount> | approve <tenancy> | vote <tenancy> <a,b,c> | register-agent <wallet> <name> | suspend-agent <wallet>");
   }
 }
 

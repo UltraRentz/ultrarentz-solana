@@ -27,8 +27,10 @@ Yield-bearing rent deposits with automated release and DAO dispute resolution, w
 | `set_jurors` | dao_authority | up to 9 jurors + quorum |
 | `create_tenancy` | tenant | `end_ts = 0` for rolling tenancy |
 | `serve_notice` | tenant or landlord | sets end date on rolling tenancy |
-| `approve_release` | landlord | instant full refund path |
-| `raise_claim` | landlord | evidence hash required |
+| `approve_release` | landlord or approved agent | instant full refund path |
+| `raise_claim` | landlord or approved agent | evidence hash required |
+| `register_agent` / `set_agent_active` | admin | UltraRentz approves / suspends letting agents (registry PDA `["agent", wallet]`) |
+| `set_agent_approval` | landlord | lets the tenancy's agent act for them, or revokes it |
 | `accept_claim` | tenant | |
 | `submit_tenant_evidence` | tenant | optional |
 | `cast_vote` | juror | parties can't vote on their own case |
@@ -113,4 +115,5 @@ cargo test -p ultrarentz            # unit tests (settlement maths)
 * ✅ Keeper bot + 3 demo scenarios pass on a local validator (dispute: landlord 200 / tenant 1,032.40 · silent landlord: tenant 1,232.40 · one-click release: tenant 1,200)
 * ⏳ Devnet deploy, frontend wiring
 * ✅ Lending-market yield adapter (Jupiter Lend Earn interface): deposit → earn → keeper withdraws + settles in one tx. Tested end-to-end against a Jupiter-compatible mock (1,200 → 1,236 at 3%: tenant 1,223.40 · landlord 7.20 · UltraRentz 5.40). 5/5 security checks reject attacks.
+* ✅ Letting agents act for landlords: on-chain agent registry + per-tenancy landlord approval. `npm run security`: 9/9 attacks rejected (incl. tenant naming themselves as agent, unapproved agent, non-landlord approving, suspended agent).
 * ⏳ Test against real Jupiter on a mainnet fork; DAO hardening

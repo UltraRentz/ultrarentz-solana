@@ -135,6 +135,7 @@ pub mod ultrarentz {
         t.landlord_award = 0;
         t.yield_active = false;
         t.yield_shares_account = Pubkey::default();
+        t.agent_approved = false;
         t.bump = ctx.bumps.tenancy;
 
         emit!(DepositLocked {
@@ -163,6 +164,7 @@ pub mod ultrarentz {
 
     /// Landlord one-click approves full return — the "instant release" path.
     pub fn approve_release(ctx: Context<LandlordAction>) -> Result<()> {
+        check_landlord_or_agent(&ctx.accounts)?;
         let t = &mut ctx.accounts.tenancy;
         require!(t.status == TenancyStatus::Active, UrError::WrongStatus);
         require!(has_ended(t)?, UrError::NotEnded);
@@ -179,6 +181,7 @@ pub mod ultrarentz {
         evidence_hash: [u8; 32],
         evidence_uri: String,
     ) -> Result<()> {
+        check_landlord_or_agent(&ctx.accounts)?;
         let cfg = &ctx.accounts.config;
         let t = &mut ctx.accounts.tenancy;
         let now = Clock::get()?.unix_timestamp;
@@ -245,6 +248,40 @@ pub mod ultrarentz {
         t.votes[n] = award;
         t.vote_count += 1;
         emit!(VoteCast { tenancy: t.key(), juror, award });
+        Ok(())
+    }
+
+    /// UltraRentz approves a letting agent (the paying customer).
+    pub fn register_agent(ctx: Context<RegisterAgent>, name: String) -> Result<()> {
+        require!(!name.is_empty() && name.len() <= 40, UrError::InvalidParam);
+        let p = &mut ctx.accounts.agent_profile;
+        p.agent = ctx.accounts.agent.key();
+        p.name = name.clone();
+        p.active = true;
+        p.registered_ts = Clock::get()?.unix_timestamp;
+        p.bump = ctx.bumps.agent_profile;
+        emit!(AgentRegistered { agent: p.agent, name });
+        Ok(())
+    }
+
+    /// UltraRentz suspends or re-activates an agent.
+    pub fn set_agent_active(ctx: Context<SetAgentActive>, active: bool) -> Result<()> {
+        ctx.accounts.agent_profile.active = active;
+        Ok(())
+    }
+
+    /// The landlord authorises (or revokes) the tenancy's agent to act for them.
+    /// Needed because the tenant names the agent when paying: without the landlord's say-so,
+    /// a tenant could name their own wallet as "agent" and release their own deposit.
+    pub fn set_agent_approval(ctx: Context<SetAgentApproval>, approved: bool) -> Result<()> {
+        let t = &mut ctx.accounts.tenancy;
+        require!(t.agent != Pubkey::default(), UrError::NoAgent);
+        if approved {
+            let p = &ctx.accounts.agent_profile;
+            require!(p.active && p.agent == t.agent, UrError::AgentNotRegistered);
+        }
+        t.agent_approved = approved;
+        emit!(AgentApproval { tenancy: t.key(), agent: t.agent, approved });
         Ok(())
     }
 
@@ -355,6 +392,19 @@ pub mod ultrarentz {
     }
 }
 
+/// Landlord, or the tenancy's agent if the landlord approved them and UltraRentz has them registered and active.
+fn check_landlord_or_agent(a: &LandlordAction) -> Result<()> {
+    let who = a.authority.key();
+    let t = &a.tenancy;
+    if who == t.landlord {
+        return Ok(());
+    }
+    require!(t.agent != Pubkey::default() && who == t.agent && t.agent_approved, UrError::NotLandlordOrAgent);
+    let p = a.agent_profile.as_ref().ok_or(UrError::AgentNotRegistered)?;
+    require!(p.active && p.agent == who, UrError::AgentNotRegistered);
+    Ok(())
+}
+
 fn pay_from_vault<'info>(
     a: &Settle<'info>,
     to: AccountInfo<'info>,
@@ -454,11 +504,46 @@ pub struct PartyAction<'info> {
 
 #[derive(Accounts)]
 pub struct LandlordAction<'info> {
-    pub landlord: Signer<'info>,
+    /// The landlord, or an approved and registered agent acting for them (checked in the handler).
+    pub authority: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
     pub config: Box<Account<'info, Config>>,
+    #[account(mut)]
+    pub tenancy: Box<Account<'info, Tenancy>>,
+    /// Required only when the signer is the agent.
+    #[account(seeds = [AGENT_SEED, authority.key().as_ref()], bump = agent_profile.bump)]
+    pub agent_profile: Option<Box<Account<'info, AgentProfile>>>,
+}
+
+#[derive(Accounts)]
+pub struct RegisterAgent<'info> {
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump, has_one = admin)]
+    pub config: Box<Account<'info, Config>>,
+    /// CHECK: only the agent's address is recorded.
+    pub agent: UncheckedAccount<'info>,
+    #[account(init, payer = admin, space = 8 + AgentProfile::INIT_SPACE, seeds = [AGENT_SEED, agent.key().as_ref()], bump)]
+    pub agent_profile: Box<Account<'info, AgentProfile>>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct SetAgentActive<'info> {
+    pub admin: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump, has_one = admin)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(mut, seeds = [AGENT_SEED, agent_profile.agent.as_ref()], bump = agent_profile.bump)]
+    pub agent_profile: Box<Account<'info, AgentProfile>>,
+}
+
+#[derive(Accounts)]
+pub struct SetAgentApproval<'info> {
+    pub landlord: Signer<'info>,
     #[account(mut, has_one = landlord)]
     pub tenancy: Box<Account<'info, Tenancy>>,
+    #[account(seeds = [AGENT_SEED, tenancy.agent.as_ref()], bump = agent_profile.bump)]
+    pub agent_profile: Box<Account<'info, AgentProfile>>,
 }
 
 #[derive(Accounts)]
@@ -526,6 +611,17 @@ pub struct NoticeServed {
     pub tenancy: Pubkey,
     pub by: Pubkey,
     pub end_ts: i64,
+}
+#[event]
+pub struct AgentRegistered {
+    pub agent: Pubkey,
+    pub name: String,
+}
+#[event]
+pub struct AgentApproval {
+    pub tenancy: Pubkey,
+    pub agent: Pubkey,
+    pub approved: bool,
 }
 #[event]
 pub struct ReleaseApproved {

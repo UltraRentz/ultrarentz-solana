@@ -54,11 +54,11 @@
       ],
       "accounts": [
         {
-          "name": "landlord",
-          "signer": true,
-          "relations": [
-            "tenancy"
-          ]
+          "name": "authority",
+          "docs": [
+            "The landlord, or an approved and registered agent acting for them (checked in the handler)."
+          ],
+          "signer": true
         },
         {
           "name": "config",
@@ -81,6 +81,31 @@
         {
           "name": "tenancy",
           "writable": true
+        },
+        {
+          "name": "agent_profile",
+          "docs": [
+            "Required only when the signer is the agent."
+          ],
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
         }
       ],
       "args": []
@@ -587,11 +612,11 @@
       ],
       "accounts": [
         {
-          "name": "landlord",
-          "signer": true,
-          "relations": [
-            "tenancy"
-          ]
+          "name": "authority",
+          "docs": [
+            "The landlord, or an approved and registered agent acting for them (checked in the handler)."
+          ],
+          "signer": true
         },
         {
           "name": "config",
@@ -614,6 +639,31 @@
         {
           "name": "tenancy",
           "writable": true
+        },
+        {
+          "name": "agent_profile",
+          "docs": [
+            "Required only when the signer is the agent."
+          ],
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
         }
       ],
       "args": [
@@ -632,6 +682,85 @@
         },
         {
           "name": "evidence_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "register_agent",
+      "docs": [
+        "UltraRentz approves a letting agent (the paying customer)."
+      ],
+      "discriminator": [
+        135,
+        157,
+        66,
+        195,
+        2,
+        113,
+        175,
+        30
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "agent"
+        },
+        {
+          "name": "agent_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agent"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
           "type": "string"
         }
       ]
@@ -665,6 +794,137 @@
         {
           "name": "end_ts",
           "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "set_agent_active",
+      "docs": [
+        "UltraRentz suspends or re-activates an agent."
+      ],
+      "discriminator": [
+        89,
+        168,
+        250,
+        105,
+        254,
+        69,
+        246,
+        221
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "agent_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agent_profile.agent",
+                "account": "AgentProfile"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "active",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "set_agent_approval",
+      "docs": [
+        "The landlord authorises (or revokes) the tenancy's agent to act for them.",
+        "Needed because the tenant names the agent when paying: without the landlord's say-so,",
+        "a tenant could name their own wallet as \"agent\" and release their own deposit."
+      ],
+      "discriminator": [
+        39,
+        2,
+        14,
+        158,
+        172,
+        253,
+        155,
+        85
+      ],
+      "accounts": [
+        {
+          "name": "landlord",
+          "signer": true,
+          "relations": [
+            "tenancy"
+          ]
+        },
+        {
+          "name": "tenancy",
+          "writable": true
+        },
+        {
+          "name": "agent_profile",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tenancy.agent",
+                "account": "Tenancy"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "approved",
+          "type": "bool"
         }
       ]
     },
@@ -1211,6 +1471,19 @@
   ],
   "accounts": [
     {
+      "name": "AgentProfile",
+      "discriminator": [
+        60,
+        227,
+        42,
+        24,
+        0,
+        87,
+        86,
+        205
+      ]
+    },
+    {
       "name": "Config",
       "discriminator": [
         155,
@@ -1238,6 +1511,32 @@
     }
   ],
   "events": [
+    {
+      "name": "AgentApproval",
+      "discriminator": [
+        59,
+        186,
+        100,
+        187,
+        68,
+        6,
+        253,
+        83
+      ]
+    },
+    {
+      "name": "AgentRegistered",
+      "discriminator": [
+        191,
+        78,
+        217,
+        54,
+        232,
+        100,
+        189,
+        85
+      ]
+    },
     {
       "name": "ClaimAccepted",
       "discriminator": [
@@ -1494,9 +1793,94 @@
       "code": 6024,
       "name": "BadYieldAccounts",
       "msg": "Lending accounts passed in the wrong order or with wrong keys"
+    },
+    {
+      "code": 6025,
+      "name": "NotLandlordOrAgent",
+      "msg": "Only the landlord, or an agent the landlord approved, can do this"
+    },
+    {
+      "code": 6026,
+      "name": "NoAgent",
+      "msg": "This tenancy has no agent"
+    },
+    {
+      "code": 6027,
+      "name": "AgentNotRegistered",
+      "msg": "Agent is not registered with UltraRentz, or is suspended"
     }
   ],
   "types": [
+    {
+      "name": "AgentApproval",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tenancy",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "approved",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AgentProfile",
+      "docs": [
+        "A letting agent approved by UltraRentz. PDA: [\"agent\", agent wallet]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "active",
+            "docs": [
+              "UltraRentz can suspend an agent; a suspended agent can't act for anyone."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "registered_ts",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AgentRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+      }
+    },
     {
       "name": "ClaimAccepted",
       "type": {
@@ -1861,6 +2245,13 @@
               "Token account (owned by this tenancy PDA) holding the lending market's share tokens."
             ],
             "type": "pubkey"
+          },
+          {
+            "name": "agent_approved",
+            "docs": [
+              "The landlord has authorised the tenancy's agent to act for them (approve release, raise claims)."
+            ],
+            "type": "bool"
           },
           {
             "name": "bump",

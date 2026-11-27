@@ -53,7 +53,7 @@ async function scenarioDispute(ctx: Ctx, mint: any, jurors: Keypair[]) {
   const hash = [...createHash("sha256").update(evidence).digest()];
   const claimSig = await ctx.program.methods
     .raiseClaim(new BN(300 * UNIT), hash, evidence)
-    .accountsPartial({ landlord: landlord.publicKey, config: ctx.configPda, tenancy: t.tenancy })
+    .accountsPartial({ authority: landlord.publicKey, config: ctx.configPda, tenancy: t.tenancy, agentProfile: null })
     .signers([landlord])
     .rpc();
   log(ctx, "Landlord claimed 300.00 for damage, with evidence hash", claimSig);
@@ -100,7 +100,7 @@ async function scenarioRelease(ctx: Ctx, mint: any) {
   await waitForChainTime(ctx, t.endTs + 1);
   const sig = await ctx.program.methods
     .approveRelease()
-    .accountsPartial({ landlord: landlord.publicKey, config: ctx.configPda, tenancy: t.tenancy })
+    .accountsPartial({ authority: landlord.publicKey, config: ctx.configPda, tenancy: t.tenancy, agentProfile: null })
     .signers([landlord])
     .rpc();
   log(ctx, "Landlord approved full release at move-out", sig);

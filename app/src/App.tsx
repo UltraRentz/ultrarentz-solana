@@ -97,7 +97,7 @@ export default function App() {
         .filter((x): x is number => x !== null)
         .sort((a, b) => a - b)[0]
     : undefined;
-  const share = cfg && active[0] ? tenantYieldBps(active[0], cfg) / 100 : cfg ? (cfg.yieldSplit.tenantBps + cfg.yieldSplit.agentBps) / 100 : 60;
+  const share = cfg && active[0] ? tenantYieldBps(active[0], cfg) / 100 : cfg ? cfg.yieldSplit.tenantBps / 100 : 60;
 
   return (
     <div className="min-h-screen dark:bg-gray-900">

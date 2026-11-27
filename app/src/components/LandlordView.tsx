@@ -1,9 +1,9 @@
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { useCallback, useEffect, useState } from "react";
-import { approveRelease, raiseClaim, releaseNow, serveNotice } from "../lib/actions";
+import { approveRelease, raiseClaim, releaseNow, serveNotice, setAgentApproval } from "../lib/actions";
 import {
-  Config, Tenancy, UNIT, fetchManagedTenancies, fmt, fmtDate, fmtDuration, phaseOf, short,
+  AgentProfile, Config, Tenancy, UNIT, fetchAgentProfile, fetchManagedTenancies, fmt, fmtDate, fmtDuration, hasAgent, phaseOf, short,
 } from "../lib/program";
 import StatCard from "./StatCard";
 
@@ -16,13 +16,15 @@ interface Props {
   refreshKey: number;
 }
 
-function LandlordCard({ t, role, cfg, now, program, run }: { t: Tenancy; role: "landlord" | "agent"; cfg: Config; now: number; program: Program; run: Props["run"] }) {
+function LandlordCard({ t, role, cfg, now, program, run, agentProfile }: { t: Tenancy; role: "landlord" | "agent"; cfg: Config; now: number; program: Program; run: Props["run"]; agentProfile: AgentProfile | null | undefined }) {
   const phase = phaseOf(t, cfg, now);
   const [showClaim, setShowClaim] = useState(false);
   const [amount, setAmount] = useState("");
   const [evidence, setEvidence] = useState("");
   const [noticeDate, setNoticeDate] = useState("");
   const isLandlord = role === "landlord";
+  // Who may act: the landlord, or the agent once the landlord approved them and UltraRentz has them active.
+  const canAct = isLandlord || (t.agentApproved && !!agentProfile?.active);
   const units = Math.round(Number(amount) * UNIT);
   const claimValid = units > 0 && units <= t.principal && evidence.trim().length > 0;
 
@@ -35,15 +37,49 @@ function LandlordCard({ t, role, cfg, now, program, run }: { t: Tenancy; role: "
     resolved: ["Resolved — ready to pay", "bg-green-100 text-green-700"],
   }[phase.kind];
 
-  const agentNote = !isLandlord && (
-    <p className="text-xs text-gray-500 mt-3">You're the letting agent on this tenancy. Agent actions on behalf of the landlord are coming next; for now the landlord approves or claims.</p>
+  const agentNote = !isLandlord && !canAct && (
+    <p className="text-xs text-gray-500 mt-3">
+      {!agentProfile
+        ? "You're named as the letting agent, but you aren't registered with UltraRentz yet, so the landlord handles this tenancy."
+        : !agentProfile.active
+        ? "Your agent account is suspended by UltraRentz."
+        : "Waiting for the landlord to approve you to act for them on this tenancy."}
+    </p>
+  );
+
+  const agentPanel = hasAgent(t) && (
+    <div className="mt-4 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+      <div>
+        <span className="font-semibold text-gray-900 dark:text-white">
+          Letting agent: {agentProfile ? agentProfile.name : short(t.agent)}
+        </span>{" "}
+        {t.agentApproved ? (
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">Can act for the landlord</span>
+        ) : (
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">Not approved</span>
+        )}
+        {agentProfile === null && <span className="ml-2 text-gray-500">(not registered with UltraRentz)</span>}
+        {agentProfile && !agentProfile.active && <span className="ml-2 text-error">(suspended)</span>}
+      </div>
+      {isLandlord && agentProfile?.active && (
+        t.agentApproved ? (
+          <button onClick={() => run("Revoking your agent", () => setAgentApproval(program, t, false))} className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 font-semibold">
+            Revoke
+          </button>
+        ) : (
+          <button onClick={() => run("Approving your agent", () => setAgentApproval(program, t, true))} className="px-3 py-1.5 rounded-lg bg-primary text-white font-semibold">
+            Let this agent act for me
+          </button>
+        )
+      )}
+    </div>
   );
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm text-gray-500">Deposit held for you · {isLandlord ? "you are the landlord" : "you are the agent"}</p>
+          <p className="text-sm text-gray-500">Deposit held for you · {isLandlord ? "you are the landlord" : t.agentApproved ? "you are the agent, acting for the landlord" : "you are the agent"}</p>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">
             {fmt(t.principal)} <span className="text-base font-semibold text-gray-500">tUSDC</span>
           </p>
@@ -78,7 +114,7 @@ function LandlordCard({ t, role, cfg, now, program, run }: { t: Tenancy; role: "
               The tenancy has ended. You have <b>{fmtDuration(phase.refundIn)}</b> to check the property. If you do
               nothing, the full deposit goes back to the tenant automatically.
             </p>
-            {isLandlord && (
+            {canAct && (
               <>
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button onClick={() => run("Approving full release", () => approveRelease(program, t))} className="px-5 py-2.5 rounded-xl bg-secondary text-white font-semibold hover:bg-emerald-600">
@@ -131,6 +167,8 @@ function LandlordCard({ t, role, cfg, now, program, run }: { t: Tenancy; role: "
         )}
       </div>
 
+      {agentPanel}
+
       <div className="mt-4 rounded-xl border border-accent/40 bg-amber-50 dark:bg-amber-900/20 px-5 py-3 text-sm text-amber-900 dark:text-amber-200">
         <b>Your share of the interest: {isLandlord ? cfg.yieldSplit.landlordBps / 100 : cfg.yieldSplit.agentBps / 100}%</b>, paid when the deposit is settled.
       </div>
@@ -141,10 +179,18 @@ function LandlordCard({ t, role, cfg, now, program, run }: { t: Tenancy; role: "
 export default function LandlordView({ program, me, cfg, now, run, refreshKey }: Props) {
   const [rows, setRows] = useState<{ t: Tenancy; role: "landlord" | "agent" }[]>([]);
   const [copied, setCopied] = useState(false);
+  const [profiles, setProfiles] = useState<Record<string, AgentProfile | null>>({});
 
   const load = useCallback(async () => {
-    try { setRows(await fetchManagedTenancies(program, me)); } catch { /* keep last */ }
+    try {
+      const r = await fetchManagedTenancies(program, me);
+      setRows(r);
+      const agents = [...new Set([me.toBase58(), ...r.filter((x) => hasAgent(x.t)).map((x) => x.t.agent.toBase58())])];
+      const entries = await Promise.all(agents.map(async (k) => [k, await fetchAgentProfile(program, new PublicKey(k))] as const));
+      setProfiles(Object.fromEntries(entries));
+    } catch { /* keep last */ }
   }, [program, me]);
+  const myProfile = profiles[me.toBase58()];
   useEffect(() => {
     load();
     const id = setInterval(load, 5000);
@@ -172,6 +218,13 @@ export default function LandlordView({ program, me, cfg, now, run, refreshKey }:
           <p className="font-semibold text-gray-900 dark:text-white">Your landlord / agent address</p>
           <p className="text-sm text-gray-500 break-all">{me.toBase58()}</p>
           <p className="text-xs text-gray-400 mt-1">Give this to your tenant. They enter it when paying their deposit.</p>
+          {myProfile && (
+            <p className="text-sm mt-2">
+              <span className={`px-2 py-0.5 rounded-full font-semibold ${myProfile.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                {myProfile.active ? `✓ Registered agent: ${myProfile.name}` : `Agent account suspended: ${myProfile.name}`}
+              </span>
+            </p>
+          )}
         </div>
         <button onClick={copy} className="px-4 py-2 rounded-lg bg-primary text-white font-semibold">{copied ? "Copied ✓" : "Copy"}</button>
       </div>
@@ -183,7 +236,7 @@ export default function LandlordView({ program, me, cfg, now, run, refreshKey }:
           </div>
         )}
         {rows.map((r) => (
-          <LandlordCard key={r.t.address.toBase58() + r.role} t={r.t} role={r.role} cfg={cfg} now={now} program={program} run={run} />
+          <LandlordCard key={r.t.address.toBase58() + r.role} t={r.t} role={r.role} cfg={cfg} now={now} program={program} run={run} agentProfile={profiles[r.t.agent.toBase58()]} />
         ))}
       </div>
     </>

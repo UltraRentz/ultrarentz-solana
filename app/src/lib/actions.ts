@@ -6,7 +6,7 @@ import {
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
-import { CONFIG_PDA, Config, Tenancy, hasAgent, sha256 } from "./program";
+import { CONFIG_PDA, Config, Tenancy, agentProfilePda, hasAgent, sha256 } from "./program";
 
 const me = (p: Program) => p.provider.publicKey!;
 
@@ -86,15 +86,27 @@ export async function releaseNow(program: Program, cfg: Config, t: Tenancy) {
 
 // ---------------------------------------------------------------- landlord actions
 
+/** Landlord signs directly; an approved agent signs and passes their registry profile. */
+const actingAccounts = (program: Program, t: Tenancy) => ({
+  authority: me(program),
+  config: CONFIG_PDA,
+  tenancy: t.address,
+  agentProfile: (me(program).equals(t.landlord) ? null : agentProfilePda(me(program))) as any,
+});
+
 export const approveRelease = (program: Program, t: Tenancy) =>
+  program.methods.approveRelease().accountsPartial(actingAccounts(program, t)).rpc();
+
+/** Landlord authorises (or revokes) the tenancy's agent to act for them. */
+export const setAgentApproval = (program: Program, t: Tenancy, approved: boolean) =>
   program.methods
-    .approveRelease()
-    .accountsPartial({ landlord: me(program), config: CONFIG_PDA, tenancy: t.address })
+    .setAgentApproval(approved)
+    .accountsPartial({ landlord: me(program), tenancy: t.address, agentProfile: agentProfilePda(t.agent) })
     .rpc();
 
 export async function raiseClaim(program: Program, t: Tenancy, amount: number, evidence: string) {
   return program.methods
     .raiseClaim(new BN(amount), await sha256(evidence), evidence.slice(0, 200))
-    .accountsPartial({ landlord: me(program), config: CONFIG_PDA, tenancy: t.address })
+    .accountsPartial(actingAccounts(program, t))
     .rpc();
 }

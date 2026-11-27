@@ -52,4 +52,10 @@ pub enum UrError {
     YieldStillDeployed,
     #[msg("Lending accounts passed in the wrong order or with wrong keys")]
     BadYieldAccounts,
+    #[msg("Only the landlord, or an agent the landlord approved, can do this")]
+    NotLandlordOrAgent,
+    #[msg("This tenancy has no agent")]
+    NoAgent,
+    #[msg("Agent is not registered with UltraRentz, or is suspended")]
+    AgentNotRegistered,
 }

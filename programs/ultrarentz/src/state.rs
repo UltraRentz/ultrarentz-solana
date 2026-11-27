@@ -5,6 +5,7 @@ use crate::math::YieldSplit;
 pub const MAX_JURORS: usize = 9;
 pub const CONFIG_SEED: &[u8] = b"config";
 pub const TENANCY_SEED: &[u8] = b"tenancy";
+pub const AGENT_SEED: &[u8] = b"agent";
 
 /// Global protocol settings (one per deployment).
 #[account]
@@ -82,5 +83,20 @@ pub struct Tenancy {
     pub yield_active: bool,
     /// Token account (owned by this tenancy PDA) holding the lending market's share tokens.
     pub yield_shares_account: Pubkey,
+    /// The landlord has authorised the tenancy's agent to act for them (approve release, raise claims).
+    pub agent_approved: bool,
+    pub bump: u8,
+}
+
+/// A letting agent approved by UltraRentz. PDA: ["agent", agent wallet].
+#[account]
+#[derive(InitSpace)]
+pub struct AgentProfile {
+    pub agent: Pubkey,
+    #[max_len(40)]
+    pub name: String,
+    /// UltraRentz can suspend an agent; a suspended agent can't act for anyone.
+    pub active: bool,
+    pub registered_ts: i64,
     pub bump: u8,
 }
